@@ -32,19 +32,28 @@ def evaluate(df):
     print(f"Balanced Accuracy: {balanced_accuracy}")
 
 
-def train():
+def train(isGrouped):
     # TODO Not sure if this function is actually necessary becuase training rule_based is coming up with the rules and
     # that is a manual job
     print("You are running the train proccess for Rule Based Classifier")
     print(f"Current rules are as follows: {rules}")
-    print("\nTo modify the rules please visit classifiers/rule_based.py\n")
+    print("\nTo manually modify the rules please visit classifiers/rule_based.py\n")
 
 
-def test():
+def test(isHeldOut, isGrouped):
     # TODO this function should reach the pretrained model(in the case of rule_based the rule dict and test data)
 
+    print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}")
+    if isHeldOut:
+        data_path = "data/raw/fake_dialog_acts_test.dat"
+    elif isGrouped:
+        data_path = "data/processed/grouped_test.dat"
+    elif  not isGrouped:
+        data_path = "data/processed/original_test.dat"
+    
+
     data = []
-    with open(test_data_file_path, "r") as f:
+    with open(data_path, "r") as f:
         for line in f:
             line = line.strip()
 
@@ -56,6 +65,8 @@ def test():
             data.append({"act": str.lower(act), "utterance": str.lower(utterance)})
 
     df = pd.DataFrame(data=data)
+
+    # print(f"different acts in test_df: {df["act"].unique()}")
 
     df["pred"] = None
 
@@ -70,5 +81,7 @@ def test():
                 break
             else:
                 df.loc[index, "pred"] = "null"
+
+    # print(f"different preds in test_df: {df["pred"].unique()}")
 
     evaluate(df)

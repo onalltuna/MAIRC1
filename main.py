@@ -11,16 +11,15 @@ classifiers = {
 }
 
 
-def train_classifier(classifier):
+def train_classifier(classifier,isGrouped):
     classifier = classifiers[classifier]
-    print(f"\nyou are training the {classifier} model")
-    classifier.train()
+    classifier.train(isGrouped)
 
 
-def test_classifier(classifier):
+def test_classifier(classifier, isHeldOut, isGrouped):
     classifier = classifiers[classifier]
-    print(f"\nYou are testing the {classifier} model")
-    classifier.test()
+    print(f"\nYou are testing the {classifier} model with {isGrouped} setting")
+    classifier.test(isHeldOut=isHeldOut, isGrouped=isGrouped)
 
 
 def activate_dialog_with_classifer(classifier):
@@ -45,6 +44,9 @@ def main():
         required=True,
     )
 
+    train_parser.add_argument("--grouped", choices=["y", "n"], required=True)
+
+
     test_parser = subparsers.add_parser("test", help="Test a classifier")
 
     test_parser.add_argument(
@@ -52,6 +54,8 @@ def main():
         choices=classifiers.keys(),
         required=True,
     )
+
+    test_parser.add_argument("--grouped", choices=["y", "n"], required=True)
 
     dialog_parser = subparsers.add_parser("dialog", help="Start the restaurant dialog system")
 
@@ -64,19 +68,25 @@ def main():
     manual_parser = subparsers.add_parser("manual", help="Manual utterance classifier")
     manual_parser.add_argument("--classifier", choices=classifiers.keys(),required=True)
 
+    heldout_parser = subparsers.add_parser("heldout", help="Held-out test set")
+    heldout_parser.add_argument("--classifier", choices=classifiers.keys(), required=True)
+
     args = parser.parse_args()
 
     if args.command == "train":
-        train_classifier(args.classifier)
+        train_classifier(args.classifier,isGrouped=args.grouped)
 
     elif args.command == "test":
-        test_classifier(args.classifier)
+        test_classifier(args.classifier, isHeldOut=False, isGrouped=args.grouped)
 
     elif args.command == "dialog":
         activate_dialog_with_classifer(args.classifier)
 
     elif args.command == "manual":
         activate_manual_classifier(args.classifier)
+
+    elif args.command == "heldout":
+        test_classifier(args.classifier, isHeldOut=True, isGrouped=False)
 
 
 if __name__ == "__main__":

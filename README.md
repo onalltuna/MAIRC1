@@ -28,10 +28,11 @@ uv pip install -r requirements.txt
 
 
 ```bash
-python main.py train --classifier <name>
-python main.py test --classifier <name>
+python main.py train --classifier <name> --grouped <y/n>
+python main.py test --classifier <name> --grouped <y/n>
 python main.py manual --classifier <name>
 python main.py dialog --classifier <name>
+python main.py heldout --classifier <name>
 ```
 
 ```
@@ -48,13 +49,21 @@ Runs the manual utterance testing
 #### `dialog`
 Starts the restaurant dialog system using the selected classifier.
 
-### Allowed classifier names
+#### `heldout`
+Loads the held-out test set and applies testing on that file
+For this command to be usable held-out data file needs to be stored in data/raw/dialog_acts_test.dat
 
-The valid choices are:
+### Allowed classifier names
 
 - `rulebased`
 - `ml1`
 - `ml2`
+
+### Allowed group options
+
+- `y`
+- `n`
+
 
 ### Example usage
 
@@ -63,4 +72,5 @@ python main.py train --classifier rulebased
 python main.py test --classifier ml1
 python main.py dialog --classifier ml2
 python main.py manual --classifier ml1
+python main.py heldout --classifier rulebased
 ```
