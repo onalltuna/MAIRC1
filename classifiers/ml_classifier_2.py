@@ -3,6 +3,27 @@ import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
+from transformers import DistilBertTokenizerFast, DistilBertModel
+import torch
+
+def encode_bert(texts):
+    tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
+    bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
+    bert_model.eval()
+
+    encoded = tokenizer(
+        texts,
+        padding=True,
+        truncation=True,
+        return_tensors="pt"
+    )
+
+    with torch.no_grad():
+        outputs = bert_model(**encoded)
+        hidden = outputs.last_hidden_state  # [batch, seq_len, 768]
+
+    embeddings = hidden.mean(dim=1)
+    return embeddings.numpy()
 
 def load_data(path):
     data = []
@@ -20,20 +41,16 @@ def evaluate(df):
     print(f"Accuracy: {accuracy_score(y_true, y_pred):.4f}")
     print(f"Balanced Accuracy: {balanced_accuracy_score(y_true, y_pred):.4f}")
 
-def save_model(vectorizer, clf, suffix):
-    joblib.dump(vectorizer, f"classifiers/LR_vectorizer_{suffix}.joblib")
-    joblib.dump(clf, f"classifiers/LR_{suffix}.joblib")
-
 def load_model(suffix):
     vectorizer = joblib.load(f"classifiers/LR_vectorizer_{suffix}.joblib")
     clf = joblib.load(f"classifiers/LR_{suffix}.joblib")
     return vectorizer, clf
 
-def train(isGrouped):
-    print("you are running the train process for ML2")
-    print(f"isGrouped: {isGrouped}")
+def train(isGrouped, use_bert):
+    print("You are running the train process for ML classifier2")
+    print(f"isGrouped: {isGrouped}, user_bert: {use_bert}")
 
-    suffix = "grouped" if isGrouped else "original"
+    suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
     if isGrouped:
         data_path = "data/processed/grouped_train.dat"
     else:
@@ -43,13 +60,17 @@ def train(isGrouped):
     utterances = df["utterance"].tolist()
     acts = df["act"].tolist()
 
-    vectorizer = TfidfVectorizer(
-        lowercase=True,
-        stop_words="english",
-        ngram_range=(1, 2),
-        min_df=2  # ignore rare words
-    )
-    utterances_vec = vectorizer.fit_transform(utterances)
+    if use_bert:
+        utterances_vec = encode_bert(utterances)
+        vectorizer = None
+    else:
+        vectorizer = TfidfVectorizer(
+            lowercase=True,
+            stop_words="english",
+            ngram_range=(1, 2),
+            min_df=2  # ignore rare words
+        )
+        utterances_vec = vectorizer.fit_transform(utterances)
 
     clf = LogisticRegression(
         solver="lbfgs",  # supports multiclass
@@ -57,22 +78,31 @@ def train(isGrouped):
         class_weight="balanced"
     )
     clf.fit(utterances_vec, acts)
-    save_model(vectorizer, clf, suffix)
 
-def test(isHeldOut, isGrouped):
-    print("you are testing ML2")
-    print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}")
+    joblib.dump(clf, f"classifiers/LR_{suffix}.joblib")
+    if not use_bert:
+        joblib.dump(vectorizer, f"classifiers/LR_vectorizer_{suffix}.joblib")
 
-    suffix = "grouped" if isGrouped else "original"
-    if isHeldOut:
-        data_path = "data/raw/fake_dialog_acts_test.dat"
-    else:
-        data_path = f"data/processed/{suffix}_test.dat"
+def test(isHeldOut, isGrouped, use_bert):
+    print("You are testing ML classifier2")
+    print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}, use_bert: {use_bert}")
+
+    suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
+    data_path = (
+        "data/raw/fake_dialog_acts_test.dat"
+        if isHeldOut else
+        f"data/processed/{'grouped' if isGrouped else 'original'}_test.dat"
+    )
 
     df = load_data(data_path)
-    vectorizer, clf = load_model(suffix)
 
-    utterances = vectorizer.transform(df["utterance"])
+    if use_bert:
+        utterances =  encode_bert(df["utterance"].tolist())
+    else:
+        vectorizer = joblib.load(f"classifiers/LR_vectorizer_{suffix}.joblib")
+        utterances = vectorizer.transform(df["utterance"])
+
+    clf = joblib.load(f"classifiers/LR_{suffix}.joblib")
     preds = clf.predict(utterances)
     df["pred"] = preds
     evaluate(df)
