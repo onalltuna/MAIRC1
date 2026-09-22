@@ -74,11 +74,15 @@ def main():
     args = parser.parse_args()
 
     if args.command == "train":
-        train_classifier(args.classifier,isGrouped=args.grouped)
-
+        if args.grouped == "y":
+            train_classifier(args.classifier,isGrouped=True)
+        else:
+            train_classifier(args.classifier,isGrouped=False)
     elif args.command == "test":
-        test_classifier(args.classifier, isHeldOut=False, isGrouped=args.grouped)
-
+        if args.grouped == "y":
+            test_classifier(args.classifier, isHeldOut=False, isGrouped=True)
+        else:
+            test_classifier(args.classifier, isHeldOut=False, isGrouped=False)
     elif args.command == "dialog":
         activate_dialog_with_classifer(args.classifier)
 

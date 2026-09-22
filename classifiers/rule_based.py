@@ -15,7 +15,8 @@ rules = {
     "reqmore": ["more"],
     "restart": ["start over", "start again", "reset"],
     "thankyou": ["thanks", "thank you"],
-    "request": ["what is", "whats", "can i get", "could i get", "may i get", "can i have", "could i have", "may i have", "can i know", "could i know", "may i know", "can you give me", "what about", "what kind of", "what type of", "do you have", "what part of town", "what area is", "what area is it in", "where", "i would like", "could you", "i need", "how about", "how much", "phone number", "address", "price", "post code", "location"]
+    "request": ["what is", "whats", "can i get", "could i get", "may i get", "can i have", "could i have", "may i have", "can i know", "could i know", "may i know", "can you give me", "what about", "what kind of", "what type of", "do you have", "what part of town", "what area is", "what area is it in", "where", "i would like", "could you", "i need", "how about", "how much", "phone number", "address", "price", "post code", "location"],
+    "null": ["noise", "cough", "unintelligible", "breathing", "inaudible", "breathing"]
 }
 
 def evaluate(df):
@@ -70,13 +71,33 @@ def test(isHeldOut, isGrouped):
     # To do: how to solve overlapping keywords from different acts? How to deal with act "null"?
     for index, row in df.iterrows():
         words = row["utterance"].split()
-        df.loc[index, "pred"] = "null"
-
+        combos = all_ngrams(words=words)
+        # print(f"words: {words}")
+        df.loc[index, "pred"] = "inform"
         for act, keywords in rules.items():
-            if any(keyword in words for keyword in keywords):
-                df.loc[index, "pred"] = act
-                break
+            for keyword in keywords:
+                # print(f"keyword: {keyword}")
+                # print(f"words: {words}")
+                # print(f"combos: {combos}")
+                if keyword in combos:
+            # if any(keyword in words for keyword in keywords):
+                    df.loc[index, "pred"] = act
+                    break
 
     # print(f"different preds in test_df: {df["pred"].unique()}")
 
     evaluate(df)
+
+
+
+
+
+def all_ngrams(words):
+    n = len(words)
+    combos = []
+    for length in range(1, n + 1):          # window size: 1, 2, 3, ... up to full length
+        for start in range(0, n - length + 1):  # slide the window across
+            combos.append(" ".join(words[start:start + length]))
+    return combos
+
+
