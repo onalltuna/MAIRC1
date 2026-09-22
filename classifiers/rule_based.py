@@ -18,10 +18,6 @@ rules = {
     "request": ["what is", "whats", "can i get", "could i get", "may i get", "can i have", "could i have", "may i have", "can i know", "could i know", "may i know", "can you give me", "what about", "what kind of", "what type of", "do you have", "what part of town", "what area is", "what area is it in", "where", "i would like", "could you", "i need", "how about", "how much", "phone number", "address", "price", "post code", "location"]
 }
 
-# this file path can change depending on the test data that TAs will be using
-test_data_file_path = "data/processed/test/fake_test_data.dat"
-
-
 def evaluate(df):
     y_true = df["act"]
     y_pred = df["pred"]

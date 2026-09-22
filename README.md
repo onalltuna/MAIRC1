@@ -68,8 +68,8 @@ For this command to be usable held-out data file needs to be stored in data/raw/
 ### Example usage
 
 ```bash
-python main.py train --classifier rulebased
-python main.py test --classifier ml1
+python main.py train --classifier rulebased --grouped n
+python main.py test --classifier ml1 --grouped y
 python main.py dialog --classifier ml2
 python main.py manual --classifier ml1
 python main.py heldout --classifier rulebased
