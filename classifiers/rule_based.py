@@ -1,27 +1,23 @@
 import pandas as pd
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
-
+# To do: maybe use regex for rules
 rules = {
-    "inform": "food",
-    "affirm": "yes",
-    "request": "the",
-    "thankyou": "thank",
-    "null": "noise",
-    "bye": "good",
-    "reqalts": "about",
-    "negate": "no",
-    "confirm": "it",
-    "hello": "hello",
-    "repeat": "repeat",
-    "ack": "okay",
-    "deny": "wrong",
-    "restart": "start",
-    "reqmore": "more",
+    "ack": ["kay", "good", "fine"],
+    "affirm": ["right", "yes", "yeah", "ye", "yea", "correct", "perfect"],
+    "bye": ["goodbye", "good bye", "that's all", "thats all", "bye"],
+    "confirm": ["is that", "do they", "does it", "is this", "is there", "is it"],
+    "deny": ["dont", "don't", "wrong", "no"],
+    "hello": ["hello", "hi", "welcome"],
+    "inform": ["any", "i dont care", "i don't care", "i am looking for", "im looking for"],
+    "negate": ["no", "not"],
+    "repeat": ["again", "repeat", "go back", "back"],
+    "reqalts": ["anything else", "what else", "how about", "what about", "is there", "are there", "can you tell me", "next one", "another", "other", "different", "more", "do you have any", "is that the only one with", "what is available"],
+    "reqmore": ["more"],
+    "restart": ["start over", "start again", "reset"],
+    "thankyou": ["thanks", "thank you"],
+    "request": ["what is", "whats", "can i get", "could i get", "may i get", "can i have", "could i have", "may i have", "can i know", "could i know", "may i know", "can you give me", "what about", "what kind of", "what type of", "do you have", "what part of town", "what area is", "what area is it in", "where", "i would like", "could you", "i need", "how about", "how much", "phone number", "address", "price", "post code", "location"],
+    "null": ["noise", "cough", "unintelligible", "breathing", "inaudible", "breathing"]
 }
-
-# this file path can change depending on the test data that TAs will be using
-test_data_file_path = "data/processed/test/fake_test_data.dat"
-
 
 def evaluate(df):
     y_true = df["act"]
@@ -72,16 +68,36 @@ def test(isHeldOut, isGrouped):
 
     # currently this logic only checks if the rule word is present in the utterance and if not mark it as null type
     # this can also be modified in the future
+    # To do: how to solve overlapping keywords from different acts? How to deal with act "null"?
     for index, row in df.iterrows():
         words = row["utterance"].split()
-
-        for act, keyword in rules.items():
-            if keyword in words:
-                df.loc[index, "pred"] = act
-                break
-            else:
-                df.loc[index, "pred"] = "null"
+        combos = all_ngrams(words=words)
+        # print(f"words: {words}")
+        df.loc[index, "pred"] = "inform"
+        for act, keywords in rules.items():
+            for keyword in keywords:
+                # print(f"keyword: {keyword}")
+                # print(f"words: {words}")
+                # print(f"combos: {combos}")
+                if keyword in combos:
+            # if any(keyword in words for keyword in keywords):
+                    df.loc[index, "pred"] = act
+                    break
 
     # print(f"different preds in test_df: {df["pred"].unique()}")
 
     evaluate(df)
+
+
+
+
+
+def all_ngrams(words):
+    n = len(words)
+    combos = []
+    for length in range(1, n + 1):          # window size: 1, 2, 3, ... up to full length
+        for start in range(0, n - length + 1):  # slide the window across
+            combos.append(" ".join(words[start:start + length]))
+    return combos
+
+

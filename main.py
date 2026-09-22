@@ -78,7 +78,6 @@ def main():
             train_classifier(args.classifier,isGrouped=True)
         else:
             train_classifier(args.classifier,isGrouped=False)
-
     elif args.command == "test":
         if args.grouped == "y":
             test_classifier(args.classifier, isHeldOut=False, isGrouped=True)
