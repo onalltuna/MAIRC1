@@ -41,11 +41,6 @@ def evaluate(df):
     print(f"Accuracy: {accuracy_score(y_true, y_pred):.4f}")
     print(f"Balanced Accuracy: {balanced_accuracy_score(y_true, y_pred):.4f}")
 
-def load_model(suffix):
-    vectorizer = joblib.load(f"classifiers/LR_vectorizer_{suffix}.joblib")
-    clf = joblib.load(f"classifiers/LR_{suffix}.joblib")
-    return vectorizer, clf
-
 def train(isGrouped, use_bert):
     print("You are running the train process for ML classifier2")
     print(f"isGrouped: {isGrouped}, user_bert: {use_bert}")
@@ -97,7 +92,7 @@ def test(isHeldOut, isGrouped, use_bert):
     df = load_data(data_path)
 
     if use_bert:
-        utterances =  encode_bert(df["utterance"].tolist())
+        utterances = encode_bert(df["utterance"].tolist())
     else:
         vectorizer = joblib.load(f"classifiers/LR_vectorizer_{suffix}.joblib")
         utterances = vectorizer.transform(df["utterance"])
@@ -109,13 +104,7 @@ def test(isHeldOut, isGrouped, use_bert):
 
 
 def predict(utterance, isGrouped, use_bert):
-    if use_bert:
-        suffix = "bert_"
-
-    if isGrouped:
-        suffix += "grouped"
-    else:
-        suffix += "original"
+    suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
 
     if use_bert:
         features = encode_bert([utterance])
