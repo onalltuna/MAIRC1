@@ -20,7 +20,7 @@ def encode_bert(texts):
 
     with torch.no_grad():
         outputs = bert_model(**encoded)
-        hidden = outputs.last_hidden_state  # [batch, seq_len, 768]
+        hidden = outputs.last_hidden_state
 
     embeddings = hidden.mean(dim=1)
     return embeddings.numpy()
@@ -106,3 +106,24 @@ def test(isHeldOut, isGrouped, use_bert):
     preds = clf.predict(utterances)
     df["pred"] = preds
     evaluate(df)
+
+
+def predict(utterance, isGrouped, use_bert):
+    if use_bert:
+        suffix = "bert_"
+
+    if isGrouped:
+        suffix += "grouped"
+    else:
+        suffix += "original"
+
+    if use_bert:
+        features = encode_bert([utterance])
+    else:
+        vectorizer = joblib.load(f"classifiers/LR_vectorizer_{suffix}.joblib")
+        features = vectorizer.transform([utterance])
+
+    clf = joblib.load(f"classifiers/LR_{suffix}.joblib")
+    pred = clf.predict(features)[0]
+
+    return pred

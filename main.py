@@ -22,9 +22,9 @@ def test_classifier(classifier, isHeldOut, isGrouped, use_bert):
     classifier.test(isHeldOut=isHeldOut, isGrouped=isGrouped, use_bert=use_bert)
 
 
-def activate_dialog_with_classifier(classifier):
+def activate_dialog_with_classifier(classifier, is_grouped, use_bert):
 
-    dm.manage(classifier)
+    dm.manage(classifier, is_grouped, use_bert)
 
 
 def activate_manual_classifier(classifier):
@@ -62,6 +62,8 @@ def main():
         choices=classifiers.keys(),
         required=True,
     )
+    dialog_parser.add_argument("--grouped", choices=["y", "n"], required=True)
+    dialog_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
 
     manual_parser = subparsers.add_parser("manual", help="Manual utterance classifier")
     manual_parser.add_argument("--classifier", choices=classifiers.keys(),required=True)
@@ -78,7 +80,7 @@ def main():
     elif args.command == "test":
         test_classifier(args.classifier, isHeldOut=False, isGrouped=is_grouped, use_bert=use_bert)
     elif args.command == "dialog":
-        activate_dialog_with_classifier(args.classifier)
+        activate_dialog_with_classifier(args.classifier, is_grouped, use_bert)
     elif args.command == "manual":
         activate_manual_classifier(args.classifier)
     elif args.command == "heldout":

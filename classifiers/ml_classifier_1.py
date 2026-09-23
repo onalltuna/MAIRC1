@@ -8,10 +8,31 @@ from sklearn.neural_network import MLPClassifier
 import joblib
 import os
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
+import torch
+from transformers import DistilBertModel, DistilBertTokenizerFast
+
+def encode_bert(texts):
+    tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
+    bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
+    bert_model.eval()
+
+    encoded = tokenizer(
+        texts,
+        padding=True,
+        truncation=True,
+        return_tensors="pt"
+    )
+
+    with torch.no_grad():
+        outputs = bert_model(**encoded)
+        hidden = outputs.last_hidden_state 
+
+    embeddings = hidden.mean(dim=1)
+    return embeddings.numpy()
 
 
 
-def train(isGrouped):
+def train(isGrouped, use_bert):
     print("You are running the train proccess for MLP with BoW")
     print(f"isGrouped: {isGrouped}")
 
@@ -21,7 +42,7 @@ def train(isGrouped):
         suffix = "grouped"
     else:
         data_path = "data/processed/original_train.dat"
-        suffix = "notgrouped"
+        suffix = "original"
 
     data = []
     with open(data_path, "r") as f:
@@ -53,8 +74,8 @@ def train(isGrouped):
 
 
     # save the classifier and the vectorizer
-    joblib.dump(vectorizer, f"classifiers/bow_vectorizer_{suffix}.joblib")
-    joblib.dump(clf, f"classifiers/mlp_bow_{suffix}.joblib")
+    joblib.dump(vectorizer, f"classifiers/MLP_vectorizer_{suffix}.joblib")
+    joblib.dump(clf, f"classifiers/MLP_{suffix}.joblib")
 
 
 
@@ -63,7 +84,7 @@ def train_bert():
     print("You are training a MLP with pre-trained BERT embeddings")
 
 
-def test(isHeldOut, isGrouped):
+def test(isHeldOut, isGrouped, use_bert):
     print("you are testing ML1")
     print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}")
 
@@ -93,8 +114,8 @@ def test(isHeldOut, isGrouped):
 
 
     print(f"suffix: {suffix}")
-    vectorizer = joblib.load(f"classifiers/bow_vectorizer_{suffix}.joblib")
-    clf = joblib.load(f"classifiers/mlp_bow_{suffix}.joblib")
+    vectorizer = joblib.load(f"classifiers/MLP_vectorizer_{suffix}.joblib")
+    clf = joblib.load(f"classifiers/MLP_{suffix}.joblib")
     X_test_bow = vectorizer.transform(df["utterance"]) # turn utterance words into numeric representations
     preds = clf.predict(X_test_bow)
     df["pred"] = preds
@@ -109,3 +130,19 @@ def evaluate(df):
     balanced_accuracy = balanced_accuracy_score(y_true, y_pred)
     print(f"Accuracy: {accuracy}")
     print(f"Balanced Accuracy: {balanced_accuracy}")
+
+
+def predict(utterance, isGrouped, use_bert):
+    suffix = "bert_" if use_bert else ""
+    suffix += "grouped" if isGrouped else "original"
+
+    if use_bert:
+        features = encode_bert([utterance])
+    else:
+        vectorizer = joblib.load(f"classifiers/MLP_vectorizer_{suffix}.joblib")
+        features = vectorizer.transform([utterance])
+
+    clf = joblib.load(f"classifiers/MLP_{suffix}.joblib")
+    pred = clf.predict(features)[0]
+
+    return pred

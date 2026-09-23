@@ -88,6 +88,21 @@ def test(isHeldOut, isGrouped):
 
     evaluate(df)
 
+def predict(utterance):
+    """Predict a dialog act for a single utterance using keyword-based rules."""
+    utterance = utterance.lower()
+    words = utterance.split()
+    combos = all_ngrams(words=words)
+
+    pred = "inform"  # default class when nothing matches
+    for act, keywords in rules.items():
+        for keyword in keywords:
+            if keyword in combos:
+                pred = act
+                break
+
+    return pred
+
 
 
 
