@@ -27,11 +27,6 @@ def activate_dialog_with_classifier(classifier, is_grouped, use_bert):
     dm.manage(classifier, is_grouped, use_bert)
 
 
-def activate_manual_classifier(classifier):
-#TODO logic for manual classification should be implemented here
-    print(f"manual classifier is activated with: {classifier}")
-
-
 def main():
     parser = argparse.ArgumentParser(description="Restaurant dialog system")
 
@@ -65,9 +60,6 @@ def main():
     dialog_parser.add_argument("--grouped", choices=["y", "n"], required=True)
     dialog_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
 
-    manual_parser = subparsers.add_parser("manual", help="Manual utterance classifier")
-    manual_parser.add_argument("--classifier", choices=classifiers.keys(),required=True)
-
     heldout_parser = subparsers.add_parser("heldout", help="Held-out test set")
     heldout_parser.add_argument("--classifier", choices=classifiers.keys(), required=True)
 
@@ -81,8 +73,6 @@ def main():
         test_classifier(args.classifier, isHeldOut=False, isGrouped=is_grouped, use_bert=use_bert)
     elif args.command == "dialog":
         activate_dialog_with_classifier(args.classifier, is_grouped, use_bert)
-    elif args.command == "manual":
-        activate_manual_classifier(args.classifier)
     elif args.command == "heldout":
         test_classifier(args.classifier, isHeldOut=True, isGrouped=is_grouped, use_bert=use_bert)
 

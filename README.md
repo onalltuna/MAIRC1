@@ -30,7 +30,6 @@ uv pip install -r requirements.txt
 ```bash
 python main.py train --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py test --classifier <name> --grouped <y/n> [--bert <y/n>]
-python main.py manual --classifier <name>--grouped <y/n> [--bert <y/n>]
 python main.py dialog --classifier <name>
 python main.py heldout --classifier <name> [--bert <y/n>]
 ```
@@ -71,6 +70,5 @@ It is optional and default is `n`. To enable DistilBERT, set it to `y`.
 python main.py train --classifier rulebased --grouped n
 python main.py test --classifier ml1 --grouped y --bert y
 python main.py dialog --classifier ml2 --grouped y --bert y
-python main.py manual --classifier ml1
 python main.py heldout --classifier rulebased
 ```
