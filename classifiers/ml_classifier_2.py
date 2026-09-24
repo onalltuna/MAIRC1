@@ -84,7 +84,7 @@ def test(isHeldOut, isGrouped, use_bert):
 
     suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
     data_path = (
-        "data/raw/fake_dialog_acts_test.dat"
+        "data/raw/dialog_acts_test.dat"
         if isHeldOut else
         f"data/processed/{'grouped' if isGrouped else 'original'}_test.dat"
     )

@@ -41,7 +41,7 @@ def test(isHeldOut, isGrouped):
 
     print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}")
     if isHeldOut:
-        data_path = "data/raw/fake_dialog_acts_test.dat"
+        data_path = "data/raw/dialog_acts_test.dat"
     elif isGrouped:
         data_path = "data/processed/grouped_test.dat"
     elif  not isGrouped:
