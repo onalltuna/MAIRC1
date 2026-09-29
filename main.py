@@ -4,6 +4,7 @@ import classifiers.rule_based as rb
 import classifiers.ml_classifier_1 as ml1
 import classifiers.ml_classifier_2 as ml2
 import dialog.dialog_manager as dm
+import prompt as prompt
 
 classifiers = {
     "rulebased": rb,
@@ -39,6 +40,11 @@ def test_classifier(classifier_name, isHeldOut, isGrouped, use_bert):
         sys.exit(1)
 
 
+def activate_prompt_with_classifier(classifier, is_grouped, use_bert):
+    
+    prompt.manage(classifier, is_grouped, use_bert)
+
+
 def activate_dialog_with_classifier(classifier, is_grouped, use_bert):
 
     dm.manage(classifier, is_grouped, use_bert)
@@ -68,6 +74,16 @@ def main():
     test_parser.add_argument("--grouped", choices=["y", "n"], required=True)
     test_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
 
+    prompt_parser = subparsers.add_parser("prompt", help="Start the propmt based classification system")
+    prompt_parser.add_argument(
+        "--classifier",
+        choices=classifiers.keys(),
+        required=True,
+    )
+    prompt_parser.add_argument("--grouped", choices=["y", "n"], required=True)
+    prompt_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
+
+
     dialog_parser = subparsers.add_parser("dialog", help="Start the restaurant dialog system")
     dialog_parser.add_argument(
         "--classifier",
@@ -90,6 +106,8 @@ def main():
         train_classifier(args.classifier, is_grouped, use_bert)
     elif args.command == "test":
         test_classifier(args.classifier, isHeldOut=False, isGrouped=is_grouped, use_bert=use_bert)
+    elif args.command == "prompt":
+        activate_prompt_with_classifier(args.classifier, is_grouped, use_bert)
     elif args.command == "dialog":
         activate_dialog_with_classifier(args.classifier, is_grouped, use_bert)
     elif args.command == "heldout":

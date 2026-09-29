@@ -57,11 +57,10 @@ uv pip install -r requirements.txt
 ```bash
 python main.py train --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py test --classifier <name> --grouped <y/n> [--bert <y/n>]
+python main.py prompt --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py dialog --classifier <name>
-python main.py heldout --classifier <name> [--bert <y/n>]
+python main.py heldout --classifier <name> --grouped <y/n> [--bert <y/n>]
 ```
-
-
 
 #### `train`
 Runs the training process for the selected classifier.
@@ -69,20 +68,22 @@ Runs the training process for the selected classifier.
 #### `test`
 Runs the testing process for the selected classifier.
 
+#### `prompt`
+Starts a prompt-based classification interface: the user enters an utterance and the system prints the predicted dialog act using the selected classifier, repeating until the user exits.
+
 #### `dialog`
-Starts the restaurant dialog system using the selected classifier.
+Starts the full restaurant dialog system: a working, terminal-based dialog manager that holds an actual conversation with the user and recommends a restaurant.
 
 #### `heldout`
-Loads the held-out test set and applies testing on that file
-For this command to be usable held-out data file needs to be stored in data/raw/dialog_acts_test.dat
+Loads the held-out test set and applies testing on that file. For this command to be usable, the held-out data file needs to be stored at `data/raw/dialog_acts_test.dat`.
 
-### Allowed classifier names
+#### Allowed classifier names
 
 - `rulebased` — keyword-matching baseline
 - `ml1` - MLP (multi-layer perceptron)
 - `ml2` — Logistic Regression
 
-### Allowed group options
+#### Allowed group options
 
 - `y`
 - `n`
@@ -101,11 +102,12 @@ Note that `--bert` only applies to `ml1` and `ml2` — it has no effect on `rule
 To explicitly run with bag-of-words features, add `--bert n` (or simply leave `--bert` out, since `n` is the default):
 
 
-### Example usage
+### General Usage Examples
 
 ```bash
 python main.py train --classifier rulebased --grouped n
 python main.py test --classifier ml1 --grouped y --bert y
-python main.py dialog --classifier ml2 --grouped y --bert y
+python main.py prompt --classifier ml1 --grouped y --bert y
+python main.py dialog --classifier ml2
 python main.py heldout --classifier rulebased --grouped n --bert n
 ```
