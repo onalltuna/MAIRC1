@@ -1,9 +1,8 @@
 import pandas as pd
 import joblib
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, balanced_accuracy_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 from transformers import DistilBertTokenizerFast, DistilBertModel
 import numpy as np
 import torch
@@ -56,6 +55,8 @@ def evaluate(df):
     y_true, y_pred = df["act"], df["pred"]
     print(f"Accuracy: {accuracy_score(y_true, y_pred):.4f}")
     print(f"Balanced Accuracy: {balanced_accuracy_score(y_true, y_pred):.4f}")
+    print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
+
 
 def train(isGrouped, use_bert):
     print("You are running the train process for ML classifier2")

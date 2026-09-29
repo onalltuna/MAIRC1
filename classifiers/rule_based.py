@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.metrics import accuracy_score, balanced_accuracy_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 # To do: maybe use regex for rules
 rules = {
     "ack": ["kay", "good", "fine"],
@@ -26,6 +26,18 @@ def evaluate(df):
     balanced_accuracy = balanced_accuracy_score(y_true, y_pred)
     print(f"Accuracy: {accuracy}")
     print(f"Balanced Accuracy: {balanced_accuracy}")
+    print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
+
+def load_data(path):
+    data = []
+    with open(path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            act, utterance = line.split(maxsplit=1)
+            data.append({"act": act.lower(), "utterance": utterance.lower()})
+    return pd.DataFrame(data)
 
 
 def train(isGrouped):
@@ -40,27 +52,13 @@ def test(isHeldOut, isGrouped):
     # TODO this function should reach the pretrained model(in the case of rule_based the rule dict and test data)
 
     print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}")
-    if isHeldOut:
-        data_path = "data/raw/dialog_acts_test.dat"
-    elif isGrouped:
-        data_path = "data/processed/grouped_test.dat"
-    elif  not isGrouped:
-        data_path = "data/processed/original_test.dat"
-    
 
-    data = []
-    with open(data_path, "r") as f:
-        for line in f:
-            line = line.strip()
-
-            if not line:
-                continue
-
-            act, utterance = line.split(maxsplit=1)
-            # lowercasing is applied but it this can be removed depending on the real test data
-            data.append({"act": str.lower(act), "utterance": str.lower(utterance)})
-
-    df = pd.DataFrame(data=data)
+    data_path = (
+        "data/raw/dialog_acts_test.dat"
+        if isHeldOut else
+        f"data/processed/{'grouped' if isGrouped else 'original'}_test.dat"
+    )
+    df = load_data(data_path)
 
     # print(f"different acts in test_df: {df["act"].unique()}")
 
@@ -102,9 +100,6 @@ def predict(utterance):
                 break
 
     return pred
-
-
-
 
 
 def all_ngrams(words):

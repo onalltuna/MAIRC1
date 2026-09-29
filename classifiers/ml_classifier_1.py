@@ -6,7 +6,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 from sklearn.neural_network import MLPClassifier
 import joblib
-from sklearn.metrics import accuracy_score, balanced_accuracy_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 import numpy as np
 import torch
 from transformers import DistilBertModel, DistilBertTokenizerFast
@@ -119,6 +119,7 @@ def evaluate(df):
     y_true, y_pred = df["act"], df["pred"]
     print(f"Accuracy: {accuracy_score(y_true, y_pred):.4f}")
     print(f"Balanced Accuracy: {balanced_accuracy_score(y_true, y_pred):.4f}")
+    print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
 
 
 def predict(utterance, isGrouped, use_bert):
