@@ -56,7 +56,7 @@ def load_data(path):
     return pd.DataFrame(data)
 
 def train(isGrouped, use_bert):
-    print("You are running the train process for MLP with BoW")
+    print("You are running the train process for MLP")
     print(f"isGrouped: {isGrouped}, use_bert: {use_bert}")
 
     suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
@@ -91,25 +91,42 @@ def train(isGrouped, use_bert):
 
 
 def test(isHeldOut, isGrouped, use_bert):
-    print("You are testing ML classifier 1")
-    print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}, use_bert: {use_bert}")
 
     suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
     data_path = (
-        "data/raw/dialog_acts_test.dat" #TODO change this to the correct file_name later
+        "data/raw/dialog_acts_test.dat"
         if isHeldOut else
         f"data/processed/{'grouped' if isGrouped else 'original'}_test.dat"
     )
 
-    df = load_data(data_path)
+    try:
+        df = load_data(data_path)
+    except FileNotFoundError:
+        print(f"Error: test data file not found at '{data_path}'.")
+        if isHeldOut:
+            print("Make sure the held-out file exists at that path.")
+        else:
+            print("Make sure you've run data_preprocess.py to generate the processed data files.")
+        return
+    except OSError as e:
+        print(f"Error: could not read '{data_path}': {e}")
+        return
 
-    if use_bert:
-        X_test_bow = encode_bert(df["utterance"].tolist())
-    else:
-        vectorizer = joblib.load(f"classifiers/MLP_vectorizer_{suffix}.joblib")
-        X_test_bow = vectorizer.transform(df["utterance"])
+    try:
+        if use_bert:
+            X_test_bow = encode_bert(df["utterance"].tolist())
+        else:
+            vectorizer = joblib.load(f"classifiers/MLP_vectorizer_{suffix}.joblib")
+            X_test_bow = vectorizer.transform(df["utterance"])
 
-    clf = joblib.load(f"classifiers/MLP_{suffix}.joblib")
+        clf = joblib.load(f"classifiers/MLP_{suffix}.joblib")
+    except FileNotFoundError as e:
+        print(f"\nError: could not find a required model file: '{e.filename}'.")
+        print("Make sure you've trained this classifier with the respective settings firs, e.g.:")
+        print(f"  python main.py train --classifier ml1 --grouped {'y' if isGrouped else 'n'}"
+              f"{' --bert y' if use_bert else ''}")
+        return
+
     preds = clf.predict(X_test_bow)
     df["pred"] = preds
     evaluate(df)
