@@ -56,7 +56,7 @@ def load_data(path):
     return pd.DataFrame(data)
 
 def train(isGrouped, use_bert):
-    print("You are running the train process for MLP with BoW")
+    print("You are running the train process for MLP")
     print(f"isGrouped: {isGrouped}, use_bert: {use_bert}")
 
     suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")

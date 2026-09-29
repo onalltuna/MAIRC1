@@ -96,7 +96,7 @@ def main():
     heldout_parser = subparsers.add_parser("heldout", help="Held-out test set")
     heldout_parser.add_argument("--classifier", choices=classifiers.keys(), required=True)
     heldout_parser.add_argument("--grouped",choices=["y", "n"], required=True)
-    heldout_parser.add_argument("--bert",choices=["y", "n"], required=True)
+    heldout_parser.add_argument("--bert",choices=["y", "n"], required=False, default="n")
 
     args = parser.parse_args()
     is_grouped = args.grouped == "y"
