@@ -86,6 +86,8 @@ rules = {
     "null": ["noise", "cough", "unintelligible", "breathing", "inaudible", "breathing"]
 }
 
+name = "Rule-based"
+
 def evaluate(df):
     y_true = df["act"]
     y_pred = df["pred"]
@@ -159,9 +161,14 @@ def train(isGrouped, use_bert):
 
 
 def test(isHeldOut, isGrouped, use_bert):
-    # TODO this function should reach the pretrained model(in the case of rule_based the rule dict and test data)
 
-    print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}")
+    if isHeldOut:
+        data_path = "data/raw/dialog_acts_test.dat"
+    elif isGrouped:
+        data_path = "data/processed/grouped_test.dat"
+    elif  not isGrouped:
+        data_path = "data/processed/original_test.dat"
+    
 
     data_path = (
         "data/raw/dialog_acts_test.dat"

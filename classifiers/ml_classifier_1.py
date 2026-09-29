@@ -1,7 +1,3 @@
-#TODO in this file first ML classifier should be defined, its train function should reach the train data in data folder and train the model
-#when the model is trained, it should be saved under classifiers folder. When the test funcion is called it should load the respective model from 
-# classifiers folder and reach the test data from data folder and apply the testing logic
-
 from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 from sklearn.neural_network import MLPClassifier
@@ -10,12 +6,19 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 import numpy as np
 import torch
 from transformers import DistilBertModel, DistilBertTokenizerFast
+from transformers.utils import logging
 
-tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
-bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
-bert_model.eval()
+logging.set_verbosity_error()
+
+name = "MLP"
+
 
 def encode_bert(texts, batch_size=32, max_length=128):
+
+    tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
+    bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
+    bert_model.eval()
+
     all_embeddings = []
 
     for i in range(0, len(texts), batch_size):
@@ -56,8 +59,6 @@ def load_data(path):
     return pd.DataFrame(data)
 
 def train(isGrouped, use_bert):
-    print("You are running the train process for MLP")
-    print(f"isGrouped: {isGrouped}, use_bert: {use_bert}")
 
     suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
 
@@ -88,6 +89,8 @@ def train(isGrouped, use_bert):
     joblib.dump(clf, f"classifiers/MLP_{suffix}.joblib")
     if not use_bert:
         joblib.dump(vectorizer, f"classifiers/MLP_vectorizer_{suffix}.joblib")
+    
+    print(f"The {name} model has been successfully trained!")
 
 
 def test(isHeldOut, isGrouped, use_bert):
@@ -121,7 +124,7 @@ def test(isHeldOut, isGrouped, use_bert):
 
         clf = joblib.load(f"classifiers/MLP_{suffix}.joblib")
     except FileNotFoundError as e:
-        print(f"\nError: could not find a required model file: '{e.filename}'.")
+        print(f"\nError: could not find the required model file: '{e.filename}'.")
         print("Make sure you've trained this classifier with the respective settings firs, e.g.:")
         print(f"  python main.py train --classifier ml1 --grouped {'y' if isGrouped else 'n'}"
               f"{' --bert y' if use_bert else ''}")

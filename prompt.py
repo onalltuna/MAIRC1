@@ -3,17 +3,20 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from transformers import DistilBertTokenizerFast, DistilBertModel
 import torch
 import classifiers.rule_based as rb
-import classifiers.ml_classifier_1 as mlp
-import classifiers.ml_classifier_2 as lr
+import classifiers.ml_classifier_1 as ml1
+import classifiers.ml_classifier_2 as ml2
+
+classifiers = {
+    "rulebased": rb,
+    "ml1": ml1,
+    "ml2": ml2,
+}
 
 
 def manage(classifier_name, is_grouped, use_bert):
-    print(f"Welcome to prompt manager! You are using {classifier_name} classifier.")
-
-    # print(f"model_path: {model_path}")
-    # print(f"vectorizer_path: {vectorizer_path}")
-
-    print("Type an utterance to classify and press Ctrl+C to exit\n")
+    classifier = classifiers[classifier_name]
+    print(f"\nWelcome to prompt manager! You are using the {classifier.name} classifier.")
+    print("Type an utterance to classify. Type /exit or press Ctrl+C to exit.\n")
 
     while True:
         try:
@@ -24,12 +27,24 @@ def manage(classifier_name, is_grouped, use_bert):
 
         if not utterance:
             continue
-        if classifier_name == "rulebased":
-            pred = rb.predict(utterance)         
-        elif classifier_name == "ml1":
-            pred = mlp.predict(utterance=utterance,isGrouped=is_grouped,use_bert=use_bert)
-        else:
-            pred = lr.predict(utterance=utterance,isGrouped=is_grouped,use_bert=use_bert)
+
+        if utterance == "/exit":
+            print("Exiting dialog manager")
+            break
+
+        try:
+            if classifier_name == "rulebased":
+                pred = rb.predict(utterance)
+            elif classifier_name == "ml1":
+                pred = ml1.predict(utterance=utterance, isGrouped=is_grouped, use_bert=use_bert)
+            else:
+                pred = ml2.predict(utterance=utterance, isGrouped=is_grouped, use_bert=use_bert)
+        except FileNotFoundError as e:
+            print(f"\nError: could not find a required model file: '{e.filename}'.")
+            print("Make sure you've trained this classifier configuration first, e.g.:")
+            print(f"  python main.py train --classifier {classifier_name} --grouped {'y' if is_grouped else 'n'}"
+                  f"{' --bert y' if use_bert else ''}")
+            break
 
         print(f"Predicted dialog act: {pred}\n")
 

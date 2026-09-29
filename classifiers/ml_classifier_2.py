@@ -7,12 +7,18 @@ from transformers import DistilBertTokenizerFast, DistilBertModel
 import numpy as np
 import torch
 
-tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
-bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
-bert_model.eval()
+from transformers.utils import logging
+
+logging.set_verbosity_error()
+
+name = "LogisticRegression"
+
 
 def encode_bert(texts, batch_size=32, max_length=128):
     all_embeddings = []
+    tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
+    bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
+    bert_model.eval()
 
     for i in range(0, len(texts), batch_size):
 
@@ -53,15 +59,12 @@ def load_data(path):
 
 def evaluate(df):
     y_true, y_pred = df["act"], df["pred"]
-    print(f"Accuracy: {accuracy_score(y_true, y_pred):.4f}")
+    print(f"\nAccuracy: {accuracy_score(y_true, y_pred):.4f}")
     print(f"Balanced Accuracy: {balanced_accuracy_score(y_true, y_pred):.4f}")
     print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
 
 
 def train(isGrouped, use_bert):
-    print("You are running the train process for ML classifier2")
-    print(f"isGrouped: {isGrouped}, user_bert: {use_bert}")
-
     suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
     if isGrouped:
         data_path = "data/processed/grouped_train.dat"
@@ -89,11 +92,9 @@ def train(isGrouped, use_bert):
     joblib.dump(clf, f"classifiers/LR_{suffix}.joblib")
     if not use_bert:
         joblib.dump(vectorizer, f"classifiers/LR_vectorizer_{suffix}.joblib")
+    print(f"The {name} model has been successfully trained!")
 
 def test(isHeldOut, isGrouped, use_bert):
-    print("You are testing ML classifier2")
-    print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}, use_bert: {use_bert}")
-
     suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
     data_path = (
         "data/raw/dialog_acts_test.dat"

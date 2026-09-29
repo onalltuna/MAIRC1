@@ -15,39 +15,52 @@ classifiers = {
 
 def train_classifier(classifier_name, isGrouped, use_bert):
     classifier = classifiers[classifier_name]
+    print(f"\nYou are training the {classifier.name} model with the following settings: grouped={isGrouped}, bert={use_bert}\n")
     try:
         classifier.train(isGrouped=isGrouped, use_bert=use_bert)
     except FileNotFoundError as e:
         print(f"Error: could not find a required file while training '{classifier_name}': {e.filename}")
-        print("Make sure you've run data_preprocess.py to generate the processed data files.")
-        sys.exit(1)
+        print("Make sure you've run data_preprocess.py to generate the processed data files first:")
+        print("  python data_preprocess.py")
+        sys.exit(0)
 
 
 
 def test_classifier(classifier_name, isHeldOut, isGrouped, use_bert):
     classifier = classifiers[classifier_name]
-    print(f"\nYou are testing the {classifier_name} model with the following settings: grouped={isGrouped}, bert={use_bert}\n")
+    print(f"\nYou are testing the {classifier.name} model with the following settings: grouped={isGrouped}, bert={use_bert}, held-out:{isHeldOut}\n")
     try:
         classifier.test(isHeldOut=isHeldOut, isGrouped=isGrouped, use_bert=use_bert)
     except FileNotFoundError as e:
-        print(f"Error: could not find a required file while testing '{classifier_name}': {e.filename}")
+        print(f"Error: could not find the required file while testing '{classifier_name}': {e.filename}")
         if isHeldOut:
-            print("Make sure the held-out file exists at data/raw/dialog_acts_test.dat")
+            print("\nMake sure the held-out file exists at data/raw/dialog_acts_test.dat")
         else:
-            print("Make sure you've trained this classifier first, e.g.:")
+            print("\nMake sure you've run the preprocessing script and trained this classifier first, e.g.:")
+            print("  python data_preprocess.py")
             print(f"  python main.py train --classifier {classifier_name} --grouped {'y' if isGrouped else 'n'}"
                   f"{' --bert y' if use_bert else ''}")
+        sys.exit(0)
+
+
+def activate_prompt_with_classifier(classifier_name, is_grouped, use_bert):
+    try:
+        prompt.manage(classifier_name, is_grouped, use_bert)
+    except FileNotFoundError as e:
+        print(f"Error: could not find a required model file: '{e.filename}'.")
+        print("Make sure you've trained this classifier configuration first, e.g.:")
+        print(f"  python main.py train --classifier {classifier_name} --grouped {'y' if is_grouped else 'n'}"
+              f"{' --bert y' if use_bert else ''}")
         sys.exit(1)
 
 
-def activate_prompt_with_classifier(classifier, is_grouped, use_bert):
-    
-    prompt.manage(classifier, is_grouped, use_bert)
-
-
-def activate_dialog_with_classifier(classifier, is_grouped, use_bert):
-
-    dm.manage(classifier, is_grouped, use_bert)
+def activate_dialog_with_classifier(classifier_name, is_grouped, use_bert):
+    try:
+        dm.manage(classifier_name, is_grouped, use_bert)
+    except FileNotFoundError as e:
+        print(f"Error: could not find a required model file: '{e.filename}'.")
+        print("Make sure you've trained this classifier configuration first.")
+        sys.exit(1)
 
 
 def main():
@@ -85,11 +98,7 @@ def main():
 
 
     dialog_parser = subparsers.add_parser("dialog", help="Start the restaurant dialog system")
-    dialog_parser.add_argument(
-        "--classifier",
-        choices=classifiers.keys(),
-        required=True,
-    )
+    dialog_parser.add_argument("--classifier",choices=classifiers.keys(),required=True)
     dialog_parser.add_argument("--grouped", choices=["y", "n"], required=True)
     dialog_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
 
