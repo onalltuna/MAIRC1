@@ -4,3 +4,4 @@ joblib
 transformers
 torch
 sys
+numpy
