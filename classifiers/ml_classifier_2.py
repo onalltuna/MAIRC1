@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 from transformers import DistilBertTokenizerFast, DistilBertModel
 import numpy as np
 import torch
+from evaluate import evaluate
 
 from transformers.utils import logging
 
@@ -57,12 +58,6 @@ def load_data(path):
             data.append({"act": act.lower(), "utterance": utterance.lower()})
     return pd.DataFrame(data)
 
-def evaluate(df):
-    y_true, y_pred = df["act"], df["pred"]
-    print(f"\nAccuracy: {accuracy_score(y_true, y_pred):.4f}")
-    print(f"Balanced Accuracy: {balanced_accuracy_score(y_true, y_pred):.4f}")
-    print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
-
 
 def train(isGrouped, use_bert):
     suffix = ("bert_" if use_bert else "") + ("grouped" if isGrouped else "original")
@@ -113,7 +108,15 @@ def test(isHeldOut, isGrouped, use_bert):
     clf = joblib.load(f"classifiers/LR_{suffix}.joblib")
     preds = clf.predict(utterances)
     df["pred"] = preds
-    evaluate(df)
+
+    grouped = "grouped" if isGrouped else "nogroup"
+    bert = "bert" if use_bert else "bow"
+    heldout = "heldout" if isHeldOut else "regular"
+    eval_file_name = f"lr_{heldout}_{grouped}_{bert}"
+    conf_matrix_file_name = f"lr_matrix_{heldout}_{grouped}"
+    
+    evaluate(df=df,general_file_name=eval_file_name,conf_matrix_name=conf_matrix_file_name)
+
 
 
 def predict(utterance, isGrouped, use_bert):

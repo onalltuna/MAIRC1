@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, confusion_matrix
+from evaluate import evaluate
 # To do: maybe use regex for rules
 rules = {
     "ack": ["kay", "good", "fine"],
@@ -88,39 +88,39 @@ rules = {
 
 name = "Rule-based"
 
-def evaluate(df):
-    y_true = df["act"]
-    y_pred = df["pred"]
-    accuracy = accuracy_score(y_true, y_pred)
-    balanced_accuracy = balanced_accuracy_score(y_true, y_pred)
-    print(f"Accuracy: {accuracy}")
-    print(f"Balanced Accuracy: {balanced_accuracy}")
-    print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
-    # error analysis
-    # unmatched = df[df["pred"] == "null"]
-    # print(unmatched["act"].value_counts())
-    # errors = df[
-    #     (df["act"] == "inform") &
-    #     (df["pred"] == "null")
-    #     ]
-    # print(errors["utterance"].sample(
-    #     min(200, len(errors)),
-    #     random_state=42
-    # ).to_string(index=False))
-    # errors["utterance"].value_counts().head(50)
-    # print(errors["utterance"].head(100))
-    # cm = confusion_matrix(df["act"], df["pred"], labels=sorted(df["act"].unique()))
-    # cm_df = pd.DataFrame(
-    #     cm,
-    #     index=sorted(df["act"].unique()),
-    #     columns=sorted(df["act"].unique())
-    # )
-    # print(cm_df)
-    # errors = df[
-    #     (df["act"] == "reqalts") &
-    #     (df["pred"] == "request")
-    #     ]
-    # print(errors["utterance"].head(100))
+# def evaluate(df):
+#     y_true = df["act"]
+#     y_pred = df["pred"]
+#     accuracy = accuracy_score(y_true, y_pred)
+#     balanced_accuracy = balanced_accuracy_score(y_true, y_pred)
+#     print(f"Accuracy: {accuracy}")
+#     print(f"Balanced Accuracy: {balanced_accuracy}")
+#     print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
+#     # error analysis
+#     # unmatched = df[df["pred"] == "null"]
+#     # print(unmatched["act"].value_counts())
+#     # errors = df[
+#     #     (df["act"] == "inform") &
+#     #     (df["pred"] == "null")
+#     #     ]
+#     # print(errors["utterance"].sample(
+#     #     min(200, len(errors)),
+#     #     random_state=42
+#     # ).to_string(index=False))
+#     # errors["utterance"].value_counts().head(50)
+#     # print(errors["utterance"].head(100))
+#     # cm = confusion_matrix(df["act"], df["pred"], labels=sorted(df["act"].unique()))
+#     # cm_df = pd.DataFrame(
+#     #     cm,
+#     #     index=sorted(df["act"].unique()),
+#     #     columns=sorted(df["act"].unique())
+#     # )
+#     # print(cm_df)
+#     # errors = df[
+#     #     (df["act"] == "reqalts") &
+#     #     (df["pred"] == "request")
+#     #     ]
+#     # print(errors["utterance"].head(100))
 
 def load_data(path):
     data = []
@@ -200,8 +200,12 @@ def test(isHeldOut, isGrouped, use_bert):
                     break
 
     # print(f"different preds in test_df: {df["pred"].unique()}")
+    grouped = "grouped" if isGrouped else "nogroup"
+    heldout = "heldout" if isHeldOut else "regular"
+    eval_file_name = f"rule_based_{heldout}_{grouped}"
+    conf_matrix_file_name = f"rule_based_matrix_{heldout}_{grouped}"
 
-    evaluate(df)
+    evaluate(df=df,general_file_name=eval_file_name,conf_matrix_name=conf_matrix_file_name)
 
 def predict(utterance):
     """Predict a dialog act for a single utterance using keyword-based rules."""
