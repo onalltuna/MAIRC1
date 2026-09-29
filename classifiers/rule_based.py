@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, confusion_matrix
 # To do: maybe use regex for rules
 rules = {
     "ack": ["kay", "good", "fine"],
@@ -8,14 +8,81 @@ rules = {
     "confirm": ["is that", "do they", "does it", "is this", "is there", "is it"],
     "deny": ["dont", "don't", "wrong", "no"],
     "hello": ["hello", "hi", "welcome"],
-    "inform": ["any", "i dont care", "i don't care", "i am looking for", "im looking for"],
+    "inform": [
+    "i dont care",
+    "i don't care",
+    "looking for",
+    "want",
+    "would like",
+    "cheap",
+    "moderate",
+    "moderately",
+    "expensive",
+    "north",
+    "south",
+    "east",
+    "west",
+    "centre",
+    "center",
+    "part of town",
+    "italian",
+    "chinese",
+    "indian",
+    "thai",
+    "french",
+    "turkish",
+    "gastropub",
+    "mediterranean",
+    "asian oriental",
+    "jamaican",
+    "basque",
+    "international",
+    "north american",
+    "danish",
+    "polynesian",
+    "oriental",
+    "korean",
+    "kosher",
+    "german",
+    "portuguese",
+    "lebanese",
+    "russian",
+    "afghan",
+    "spanish",
+    "japanese",
+    "moroccan",
+    "catalan",
+    "african",
+    "european",
+    "modern european",
+    "caribbean",
+    "bistro",
+    "mexican",
+    "asian",
+    "brazilian",
+    "cantonese",
+    "singapore",
+    "singaporean",
+    "corsican",
+    "barbecue",
+    "christmas",
+    "indonesian",
+    "scandinavian",
+    "vietnamese",
+    "scottish",
+    "irish",
+    "british",
+    "english",
+    "persian",
+    "doesnt matter",
+    ],
     "negate": ["no", "not"],
     "repeat": ["again", "repeat", "go back", "back"],
     "reqalts": ["anything else", "what else", "how about", "what about", "is there", "are there", "can you tell me", "next one", "another", "other", "different", "more", "do you have any", "is that the only one with", "what is available"],
     "reqmore": ["more"],
     "restart": ["start over", "start again", "reset"],
     "thankyou": ["thanks", "thank you"],
-    "request": ["what is", "whats", "can i get", "could i get", "may i get", "can i have", "could i have", "may i have", "can i know", "could i know", "may i know", "can you give me", "what about", "what kind of", "what type of", "do you have", "what part of town", "what area is", "what area is it in", "where", "i would like", "could you", "i need", "how about", "how much", "phone number", "address", "price", "post code", "location"],
+    "request": ["what is", "whats", "can i get", "could i get", "may i get", "can i have", "could i have", "may i have", "can i know", "could i know", "may i know", "can you give me", "what kind of", "what type of", "do you have", "what part of town", "what area is", "what area is it in", "where", "i would like", "could you", "i need", "how much", "phone number", "address", "price", "post code", "location"],
     "null": ["noise", "cough", "unintelligible", "breathing", "inaudible", "breathing"]
 }
 
@@ -27,6 +94,31 @@ def evaluate(df):
     print(f"Accuracy: {accuracy}")
     print(f"Balanced Accuracy: {balanced_accuracy}")
     print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
+    # error analysis
+    # unmatched = df[df["pred"] == "null"]
+    # print(unmatched["act"].value_counts())
+    # errors = df[
+    #     (df["act"] == "inform") &
+    #     (df["pred"] == "null")
+    #     ]
+    # print(errors["utterance"].sample(
+    #     min(200, len(errors)),
+    #     random_state=42
+    # ).to_string(index=False))
+    # errors["utterance"].value_counts().head(50)
+    # print(errors["utterance"].head(100))
+    # cm = confusion_matrix(df["act"], df["pred"], labels=sorted(df["act"].unique()))
+    # cm_df = pd.DataFrame(
+    #     cm,
+    #     index=sorted(df["act"].unique()),
+    #     columns=sorted(df["act"].unique())
+    # )
+    # print(cm_df)
+    # errors = df[
+    #     (df["act"] == "reqalts") &
+    #     (df["pred"] == "request")
+    #     ]
+    # print(errors["utterance"].head(100))
 
 def load_data(path):
     data = []
@@ -89,7 +181,7 @@ def test(isHeldOut, isGrouped, use_bert):
         words = row["utterance"].split()
         combos = all_ngrams(words=words)
         # print(f"words: {words}")
-        df.loc[index, "pred"] = "inform"
+        df.loc[index, "pred"] = "null"
         for act, keywords in rules.items():
             for keyword in keywords:
                 # print(f"keyword: {keyword}")
@@ -110,7 +202,7 @@ def predict(utterance):
     words = utterance.split()
     combos = all_ngrams(words=words)
 
-    pred = "inform"  # default class when nothing matches
+    pred = "null"  # default class when nothing matches
     for act, keywords in rules.items():
         for keyword in keywords:
             if keyword in combos:
