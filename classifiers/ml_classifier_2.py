@@ -1,6 +1,7 @@
 import pandas as pd
 import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from transformers import DistilBertTokenizerFast, DistilBertModel
@@ -74,12 +75,7 @@ def train(isGrouped, use_bert):
         utterances_vec = encode_bert(utterances)
         vectorizer = None
     else:
-        vectorizer = TfidfVectorizer(
-            lowercase=True,
-            stop_words="english",
-            ngram_range=(1, 2),
-            min_df=2  # ignore rare words
-        )
+        vectorizer = CountVectorizer()
         utterances_vec = vectorizer.fit_transform(utterances)
 
     clf = LogisticRegression(
