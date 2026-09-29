@@ -1,4 +1,5 @@
 import argparse
+import sys
 import classifiers.rule_based as rb
 import classifiers.ml_classifier_1 as ml1
 import classifiers.ml_classifier_2 as ml2
@@ -11,15 +12,31 @@ classifiers = {
 }
 
 
-def train_classifier(classifier,isGrouped, use_bert):
-    classifier = classifiers[classifier]
-    classifier.train(isGrouped, use_bert=use_bert)
+def train_classifier(classifier_name, isGrouped, use_bert):
+    classifier = classifiers[classifier_name]
+    try:
+        classifier.train(isGrouped=isGrouped, use_bert=use_bert)
+    except FileNotFoundError as e:
+        print(f"Error: could not find a required file while training '{classifier_name}': {e.filename}")
+        print("Make sure you've run data_preprocess.py to generate the processed data files.")
+        sys.exit(1)
 
 
-def test_classifier(classifier, isHeldOut, isGrouped, use_bert):
-    classifier = classifiers[classifier]
-    print(f"\nYou are testing the {classifier} model with {isGrouped} setting")
-    classifier.test(isHeldOut=isHeldOut, isGrouped=isGrouped, use_bert=use_bert)
+
+def test_classifier(classifier_name, isHeldOut, isGrouped, use_bert):
+    classifier = classifiers[classifier_name]
+    print(f"\nYou are testing the {classifier_name} model with the following settings: grouped={isGrouped}, bert={use_bert}\n")
+    try:
+        classifier.test(isHeldOut=isHeldOut, isGrouped=isGrouped, use_bert=use_bert)
+    except FileNotFoundError as e:
+        print(f"Error: could not find a required file while testing '{classifier_name}': {e.filename}")
+        if isHeldOut:
+            print("Make sure the held-out file exists at data/raw/dialog_acts_test.dat")
+        else:
+            print("Make sure you've trained this classifier first, e.g.:")
+            print(f"  python main.py train --classifier {classifier_name} --grouped {'y' if isGrouped else 'n'}"
+                  f"{' --bert y' if use_bert else ''}")
+        sys.exit(1)
 
 
 def activate_dialog_with_classifier(classifier, is_grouped, use_bert):
@@ -62,6 +79,8 @@ def main():
 
     heldout_parser = subparsers.add_parser("heldout", help="Held-out test set")
     heldout_parser.add_argument("--classifier", choices=classifiers.keys(), required=True)
+    heldout_parser.add_argument("--grouped",choices=["y", "n"], required=True)
+    heldout_parser.add_argument("--bert",choices=["y", "n"], required=True)
 
     args = parser.parse_args()
     is_grouped = args.grouped == "y"

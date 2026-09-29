@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from transformers import DistilBertTokenizerFast, DistilBertModel
 import torch
 
+
 def encode_bert(texts):
     tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
     bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")

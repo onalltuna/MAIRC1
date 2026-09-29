@@ -28,15 +28,33 @@ def evaluate(df):
     print(f"Balanced Accuracy: {balanced_accuracy}")
 
 
-def train(isGrouped):
-    # TODO Not sure if this function is actually necessary becuase training rule_based is coming up with the rules and
-    # that is a manual job
-    print("You are running the train proccess for Rule Based Classifier")
-    print(f"Current rules are as follows: {rules}")
-    print("\nTo manually modify the rules please visit classifiers/rule_based.py\n")
+def train(isGrouped, use_bert):
+    """
+    Display the current rule-based classifier configuration.
+    Since the rule-based classifier does not require model training, this
+    function only reports the rules currently used for classification.
+    Args:
+        isGrouped (bool): This parameter is kept for compatibility with the
+                         other classifiers.
+        use_bert (bool): This parameter is kept for compatibility with the
+                         other classifiers.
+    """
+
+    print("\n" + "=" * 60)
+    print("RULE-BASED CLASSIFIER")
+    print("=" * 60)
+    print("No training is required for the rule-based classifier.")
+    print(f"Number of dialog acts: {len(rules)}")
+    print(f"Number of rules: {sum(len(keywords) for keywords in rules.values())}")
+    print("\nCurrent rules:")
+    for act, keywords in rules.items():
+        print(f"  {act:<10}: {', '.join(keywords)}")
+    print("\nTo modify the rules, edit:")
+    print("  classifiers/rule_based.py")
+    print("=" * 60)
 
 
-def test(isHeldOut, isGrouped):
+def test(isHeldOut, isGrouped, use_bert):
     # TODO this function should reach the pretrained model(in the case of rule_based the rule dict and test data)
 
     print(f"isHeldOut: {isHeldOut}, isGrouped: {isGrouped}")
@@ -104,9 +122,6 @@ def predict(utterance):
     return pred
 
 
-
-
-
 def all_ngrams(words):
     n = len(words)
     combos = []
@@ -114,5 +129,3 @@ def all_ngrams(words):
         for start in range(0, n - length + 1):  # slide the window across
             combos.append(" ".join(words[start:start + length]))
     return combos
-
-
