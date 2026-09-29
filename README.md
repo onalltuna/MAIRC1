@@ -2,27 +2,29 @@
 
 ## About
 
-This project implements a restaurant recommendation dialog system in two parts. **Part 1a** focuses on dialog act classification: utterances in a conversation are actions (greeting, asking, confirming, and so on). We implement, train, and compare different classifiers for this task: a manually constructed rule-based baseline built from keyword matching, and two machine learning classifiers — a multi-layer perceptron (`ml1`) and logistic regression (`ml2`) — each trained on two different feature representations: bag-of-words and frozen pretrained DistilBERT embeddings. This gives four ML model variants in total, letting us compare representation choices while holding the classifier algorithm fixed.
+This project implements a restaurant recommendation dialog system in two parts. **Part 1** focuses on dialog act classification: utterances in a conversation are actions (greeting, asking, confirming, and so on). We implement, train, and compare different classifiers for this task: a manually constructed rule-based baseline built from keyword matching, and two machine learning classifiers — a multi-layer perceptron (`ml1`) and logistic regression (`ml2`) — each trained on two different feature representations: bag-of-words and frozen pretrained DistilBERT embeddings. This gives four ML model variants in total, letting us compare representation choices while holding the classifier algorithm fixed.
 
-**Part 1b** builds on this by combining the Part 1a classifier with slot extraction, restaurant lookup, reasoning, and natural language response generation into a complete dialog manager. The system runs in the terminal and holds a full conversation with the user, using the classifier from Part 1a to route every user utterance to the correct dialog act before deciding how to respond, ultimately aiming to recommend a restaurant that matches the user's stated preferences.
+**Part 2** builds on this by combining the Part 1 classifier with slot extraction, restaurant lookup, reasoning, and natural language response generation into a complete dialog manager. The system runs in the terminal and holds a full conversation with the user, using the classifier from Part 1 to route every user utterance to the correct dialog act before deciding how to respond, ultimately aiming to recommend a restaurant that matches the user's stated preferences.
 
-See `report.pdf` for the full write-up, including classifier comparison, evaluation results, and error analysis.
+
 
 ## Project structure
 
-├── main.py # CLI entry point (train / test / prompt / dialog / heldout)
-├── data_preprocess.py # Generates processed train/test splits from raw data
+```
+.
+├── main.py                     # CLI entry point (train / test / prompt / dialog / heldout)
+├── data_preprocess.py          # Generates processed train/test splits from raw data
 ├── classifiers/
-│ ├── rule_based.py # Keyword-matching baseline
-│ ├── ml_classifier_1.py # ml1 — MLP (BoW and DistilBERT variants)
-│ └── ml_classifier_2.py # ml2 — Logistic Regression (BoW and DistilBERT variants)
+│   ├── rule_based.py           # Keyword-matching baseline
+│   ├── ml_classifier_1.py      # ml1 — MLP (BoW and DistilBERT variants)
+│   └── ml_classifier_2.py      # ml2 — Logistic Regression (BoW and DistilBERT variants)
 ├── dialog/
-│ └── dialog_manager.py # Full terminal-based dialog system (Part 1b)
-├── prompt.py # Prompt-based single-utterance classification interface
+│   └── dialog_manager.py       # Full terminal-based dialog system (Part 1b)
+├── prompt.py                   # Prompt-based single-utterance classification interface
 ├── data/
-│ ├── raw/ # Raw dataset + held-out test file
-│ └── processed/ # Original and grouped train/test splits
-└── report.pdf # Written report: methodology, results, error analysis
+│   ├── raw/                    # Raw dataset + held-out test file
+│   └── processed/              # Original and grouped train/test splits
+```
 
 
 
