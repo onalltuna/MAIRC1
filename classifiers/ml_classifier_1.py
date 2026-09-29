@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from transformers import DistilBertModel, DistilBertTokenizerFast
 from transformers.utils import logging
+from evaluate import evaluate
 
 logging.set_verbosity_error()
 
@@ -132,14 +133,13 @@ def test(isHeldOut, isGrouped, use_bert):
 
     preds = clf.predict(X_test_bow)
     df["pred"] = preds
-    evaluate(df)
+    grouped = "grouped" if isGrouped else "nogroup"
+    bert = "bert" if use_bert else "bow"
+    heldout = "heldout" if isHeldOut else "regular"
+    eval_file_name = f"mlp_{heldout}_{grouped}_{bert}"
+    conf_matrix_file_name = f"mlp_matrix_{heldout}_{grouped}"
 
-
-def evaluate(df):
-    y_true, y_pred = df["act"], df["pred"]
-    print(f"Accuracy: {accuracy_score(y_true, y_pred):.4f}")
-    print(f"Balanced Accuracy: {balanced_accuracy_score(y_true, y_pred):.4f}")
-    print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
+    evaluate(df=df,general_file_name=eval_file_name,conf_matrix_name=conf_matrix_file_name)
 
 
 def predict(utterance, isGrouped, use_bert):
