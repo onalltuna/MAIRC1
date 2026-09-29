@@ -87,7 +87,7 @@ def main():
     test_parser.add_argument("--grouped", choices=["y", "n"], required=True)
     test_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
 
-    prompt_parser = subparsers.add_parser("prompt", help="Start the propmt based classification system")
+    prompt_parser = subparsers.add_parser("prompt", help="Start the prompt based classification system")
     prompt_parser.add_argument(
         "--classifier",
         choices=classifiers.keys(),

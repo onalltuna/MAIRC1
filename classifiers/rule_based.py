@@ -161,15 +161,6 @@ def train(isGrouped, use_bert):
 
 
 def test(isHeldOut, isGrouped, use_bert):
-
-    if isHeldOut:
-        data_path = "data/raw/dialog_acts_test.dat"
-    elif isGrouped:
-        data_path = "data/processed/grouped_test.dat"
-    elif  not isGrouped:
-        data_path = "data/processed/original_test.dat"
-    
-
     data_path = (
         "data/raw/dialog_acts_test.dat"
         if isHeldOut else
