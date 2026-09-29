@@ -4,26 +4,41 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from transformers import DistilBertTokenizerFast, DistilBertModel
+import numpy as np
 import torch
 
-def encode_bert(texts):
-    tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
-    bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
-    bert_model.eval()
+tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
+bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
+bert_model.eval()
 
-    encoded = tokenizer(
-        texts,
-        padding=True,
-        truncation=True,
-        return_tensors="pt"
-    )
+def encode_bert(texts, batch_size=32, max_length=128):
+    all_embeddings = []
 
-    with torch.no_grad():
-        outputs = bert_model(**encoded)
-        hidden = outputs.last_hidden_state
+    for i in range(0, len(texts), batch_size):
 
-    embeddings = hidden.mean(dim=1)
-    return embeddings.numpy()
+        batch = texts[i:i + batch_size]
+
+        encoded = tokenizer(
+            batch,
+            padding=True,
+            truncation=True,
+            max_length=max_length,
+            return_tensors="pt"
+        )
+
+        with torch.no_grad():
+
+            outputs = bert_model(**encoded)
+            hidden = outputs.last_hidden_state
+            mask = encoded["attention_mask"].unsqueeze(-1)
+            masked_hidden = hidden * mask
+            summed = masked_hidden.sum(dim=1)
+            counts = mask.sum(dim=1)
+            embeddings = summed / counts
+
+        all_embeddings.append(embeddings.cpu().numpy())
+
+    return np.vstack(all_embeddings)
 
 def load_data(path):
     data = []
