@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from transformers import DistilBertTokenizerFast, DistilBertModel
 from sklearn.metrics.pairwise import cosine_similarity
-from dialog.slot_extractor import ONTOLOGY
+from dialog.ontology import ONTOLOGY
 
 tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
 bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")

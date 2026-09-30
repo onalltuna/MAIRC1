@@ -2,39 +2,8 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 from Levenshtein import distance as levenshtein_distance
+from dialog.ontology import ONTOLOGY
 from dialog.semantic_similarity import find_semantic_match
-
-# Define ONTOLOGY terms TODO：maybe need to add more terms and are these three slots enough?
-ONTOLOGY = {
-    "food": [
-        "african",
-        "asian",
-        "british",
-        "chinese",
-        "french",
-        "indian",
-        "italian",
-        "japanese",
-        "mediterranean",
-        "mexican",
-        "portuguese",
-        "spanish",
-        "thai",
-        "turkish",
-    ],
-    "price": [
-        "cheap",
-        "moderate",
-        "expensive",
-    ],
-    "area": [
-        "centre",
-        "north",
-        "south",
-        "east",
-        "west",
-    ],
-}
 
 @dataclass
 class SlotResult:
@@ -156,9 +125,10 @@ def extract_candidates(text: str) -> list[tuple[str, str]]:
             candidates.append((match.group(1), "price"))
 
     area_patterns = [
-        r"\bin\s+(?:the\s+)?(north|south|east|west|centre)\b",
-        r"\b(north|south|east|west|centre)\s+part\s+of\s+town\b",
-        r"\b(north|south|east|west|centre)\s+area\b",
+        r"\b(?:in|on)\s+the\s+([a-z]+)\s+(?:part|area)\b",
+        r"\bin\s+(?:the\s+)?(north|south|east|west|centre|center)\b",
+        r"\b(north|south|east|west|centre|center)\s+part\s+of\s+town\b",
+        r"\b(north|south|east|west|centre|center)\s+area\b",
     ]
     for pattern in area_patterns:
         for match in re.finditer(pattern, text):
@@ -167,6 +137,7 @@ def extract_candidates(text: str) -> list[tuple[str, str]]:
     food_patterns = [
         r"\b(\w+)\s+food\b",
         r"\b(\w+)\s+cuisine\b",
+        r"\b(\w+)\s+restaurant\b",
     ]
     for pattern in food_patterns:
         for match in re.finditer(pattern, text):
@@ -181,7 +152,6 @@ def extract_by_semantic(candidate: str, slot: str, threshold: float = 0.7) -> Op
     The candidate is compared against the ontology values for the specified slot using DistilBERT embeddings.
     Returns None if the best semantic match is below the similarity threshold.
     """
-
     if slot not in ONTOLOGY:
         raise ValueError(f"Unknown slot: {slot}")
 
