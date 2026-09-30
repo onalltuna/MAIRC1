@@ -44,28 +44,29 @@ def create_split_grouped(df):
         .reset_index()
     )
 
-    try:
-        train_groups, test_groups = train_test_split(
-            grouped,
-            test_size=TEST_SIZE,
-            random_state=RANDOM_STATE,
-            stratify=grouped["act"]
-        )
-    except ValueError:
-        print("Stratified grouped split was not possible because at least one class has too few unique utterances.")
-        print("Using grouped split without stratification instead.")
+    # Identify dialog acts with too few unique utterance groups to be stratified.
+    label_counts = grouped["act"].value_counts()
+    rare_labels = label_counts[label_counts < 2].index
 
-        train_groups, test_groups = train_test_split(
-            grouped,
-            test_size=TEST_SIZE,
-            random_state=RANDOM_STATE
-        )
+    rare_groups = grouped[grouped["act"].isin(rare_labels)]
+    other_groups = grouped[~grouped["act"].isin(rare_labels)]
 
-    train_utterances= set(train_groups["utterance"])
-    test_utterances= set(test_groups["utterance"])
+    print("Dialog acts with too few unique utterance groups to be stratified:")
+    print(list(rare_labels))
 
-    train_df= df[df["utterance"].isin(train_utterances)]
-    test_df= df[df["utterance"].isin(test_utterances)]
+    # Apply stratified sampling to all labels where possible.
+    train_groups, test_groups = train_test_split(
+        other_groups, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=other_groups["act"]
+    )
+
+    # Add the rare groups back to the training set to ensure they are represented.
+    train_groups = pd.concat([train_groups, rare_groups], ignore_index=True)
+    train_utterances = set(train_groups["utterance"])
+    test_utterances = set(test_groups["utterance"])
+
+    # Expand the selected utterance groups back to the original dataset to create the final train and test splits.
+    train_df = df[df["utterance"].isin(train_utterances)]
+    test_df = df[df["utterance"].isin(test_utterances)]
 
     return train_df, test_df
 
