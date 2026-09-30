@@ -30,16 +30,14 @@ This project implements a restaurant recommendation dialog system in two parts. 
 
 ## Data Preprocessing
 
+The raw DSTC 2 dialog acts data is stored in 'data/raw/dialog_acts.dat'. Each line contains a dialog acts label followed by the corresponding user utterance. The preprocessing script reads this file line by line,seperates the label from the utterance and converts them both to lowercase.
 ### Splitting strategy
 
-Many utterances in the dataset are not unique, and with a naive random train/test split, this can cause **data leakage**: the same utterance may end up in both the training and test sets, letting a model "recognize" a sentence it has effectively already seen rather than genuinely generalizing to unseen input. This would inflate test accuracy and give a misleading picture of real performance.
+Many utterances in the dataset are not uniwue. With a normal random split, the same utterance may appear in both training and test data, which can cause data leakage. 
+Therefore, we create two split variants:
 
-To address this, every ML classifier is trained and evaluated on **two split variants**, controlled by the `--grouped` flag:
-
-- **Original split** (`--grouped n`) — a random 85/15 train/test split over the full dataset. Duplicate utterances may end up on both sides of the split.
-- **Grouped split** (`--grouped y`) — an 85/15 split where all duplicate utterances are kept together in the same split (either entirely in train or entirely in test).
-
-Both splits use **stratified sampling**, so the class (dialog act) distribution in the test set matches the distribution in the training set.
+- **Original split** (`--grouped n`) - a stratified random 85/15 train-test split over all utterance instances. Duplicate utterances may occur in both train and test.
+- **Grouped split** (`--grouped y`) - an 86/15 split over unique utterance groups, where identical utterances are kept in the same split. Stratified sampling is applied where possible. The `reqmore` class has only one unique utterance group (`more`), so it is assigned to the training set and excluded from the stratified group-level split.
 
 ### Processed data
 
@@ -48,6 +46,12 @@ The processed train/test files for both split variants are already included unde
 ```bash
 python data_preprocess.py
 ```
+
+```markdown
+On Windows, if `python`is not recognized, use: 
+
+```powershell
+py data_preprocess.py
 
 ## Requirements
 
