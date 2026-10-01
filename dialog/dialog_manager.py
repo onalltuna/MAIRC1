@@ -3,6 +3,11 @@ import classifiers.ml_classifier_1 as ml1
 import classifiers.ml_classifier_2 as ml2
 from dialog.slot_extractor import extract_slots
 
+#responses templates from response_generator
+from dialog.response_generator import responses
+
+#for the repeat response, we need to keep track of what has been said previously
+#last_response = None
 
 classifiers = {
     "rulebased": rb,
@@ -90,6 +95,14 @@ def manage(classifier_name, is_grouped, use_bert, slot_fallback="levenshtein"):
             break
 
         print(f"Predicted dialog act: {pred}")
+
+        #if the user asks to repeat, repeat previous answer, or the welcome message -? not sure anymore if this is needed
+       # if pred.lower() == "repeat":
+       #     previous = last_response or responses["welcome"]
+        #    print(responses["repeat_re"].format(last_response=previous))
+        #    print()
+         #   continue
+
 
         # Only extract slots from INFORM utterances.
         if pred.lower() == "inform":
