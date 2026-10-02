@@ -1,7 +1,7 @@
 RESPONSES = {
 
     "welcome":
-        "Welcome! What kind of restaurant are you looking for?",
+        "Hello, welcome to the restaurant recommendation system. How may I help you?",
 
     "askfood":
         "What type of food would you like?",
@@ -47,11 +47,13 @@ RESPONSES = {
 
     "restart":
         "Let's start over.",
-    "postcode": "Postcode is {postcode}",
-
+    "postcode": "Postcode of {restaurantname} restaurant is {postcode}",
+    "address": "The address of {restaurantname} restaurant is {address}",
+    "phone": "Phone number of {restaurantname} restaurant is {phone}",
+    "restaurant_info_unknow": "The {info} of {restaurantname} restaurant is unknown.",
+    "acknowledge": "Okay",
     "goodbye":
         "Goodbye!",
-
     "ended":
         "The conversation has ended.",
 }

@@ -82,6 +82,7 @@ def extract_by_levenshtein(candidate: str, slot: str, max_distance: int = 2)-> O
     Fallback to recover a slot value using Levenshtein edit distance when keyword matching does not work.
     When Levenshtein returns a value that is not an exact match, it requires confirmation.
     """
+    print("debug find levenshtein")
     if slot not in ONTOLOGY:
         raise ValueError(f"Unknown slot: {slot}")
 

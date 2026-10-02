@@ -152,8 +152,7 @@ def handle_preferences(
 
 def generate_confirmation(result):
     """
-    Generate a confirmation response for an approximate
-    slot match.
+    Generate a confirmation response for an approximate slot match.
     """
 
     if result.slot == "food":
@@ -192,10 +191,13 @@ def handle_confirmation(
     config,
 ):
     if not state.pending_confirmations:
-
         state.state = DialogStateName.COLLECT_PREFERENCES
 
-        return state, ask_for_missing_slot(state)
+        system_response = ask_for_missing_slot(state)
+
+        state.last_response = system_response
+
+        return state, system_response
 
     result = state.pending_confirmations[0]
 
@@ -250,7 +252,9 @@ def handle_confirmation(
 
         next_result = state.pending_confirmations[0]
 
-        system_response = generate_confirmation(next_result)
+        system_response = generate_confirmation(
+            next_result
+        )
 
         state.last_response = system_response
 
@@ -260,16 +264,30 @@ def handle_confirmation(
     # All confirmations finished
     # --------------------------------
 
+    if all_preferences_known(state):
+
+        state.state = DialogStateName.LOOKUP
+
+        return transition(
+            state,
+            UserInput(
+                text="",
+                dialog_act="internal_lookup",
+            ),
+            config,
+        )
+
+    # --------------------------------
+    # Some preferences are still missing
+    # --------------------------------
+
     state.state = DialogStateName.COLLECT_PREFERENCES
 
-    return transition(
-        state,
-        UserInput(
-            text="",
-            dialog_act="internal_continue",
-        ),
-        config,
-    )
+    system_response = ask_for_missing_slot(state)
+
+    state.last_response = system_response
+
+    return state, system_response
 
 
 def handle_lookup(state, config):
@@ -337,8 +355,7 @@ def generate_recommendation(restaurant):
         pricerange=restaurant["pricerange"],
     )
 
-def handle_restaurant_request(state, config):
-
+def handle_restaurant_request(state, text):
     restaurant = state.current_restaurant
 
     if restaurant is None:
@@ -346,16 +363,53 @@ def handle_restaurant_request(state, config):
         state.last_response = system_response
         return state, system_response
 
-    system_response = response(
-        "postcode",
-        postcode=restaurant["postcode"],
-    )
+    text = text.lower().strip()
+
+    if any(word in text for word in {"address", "addr"}):
+        address = restaurant.get("addr")
+        if address:
+            system_response = response(
+                "address",
+                restaurantname=restaurant["restaurantname"],
+                address=restaurant["addr"],
+            )
+        else:
+            system_response = response("restaurant_info_unknown", restaurantname=restaurant["restaurantname"])
+
+    elif any(word in text for word in {"postcode", "post code", "postal"}):
+        postcode = restaurant.get("postcode")
+        if postcode:
+            system_response = response(
+                "postcode",
+                restaurantname=restaurant["restaurantname"],
+                postcode=restaurant["postcode"],
+            )
+        else:
+            system_response = response("restaurant_info_unknown", restaurantname=restaurant["restaurantname"])
+
+    elif any(word in text for word in {"phone", "telephone"}):
+        phone = restaurant.get("phone")
+        if phone:
+            system_response = response(
+                "phone",
+                restaurantname=restaurant["restaurantname"],
+                phone=restaurant["phone"],
+            )
+        else:
+            system_response = response("restaurant_info_unknown", restaurantname=restaurant["restaurantname"])
+
+
+    else:
+        system_response = response(
+            "restaurant_info",
+            restaurantname=restaurant["restaurantname"],
+        )
 
     state.last_response = system_response
 
     return state, system_response
 
-def handle_recommendation(state, act, config):
+def handle_recommendation(state, text, act, config):
 
     if act in {"reqalts", "alternative"}:
         state.state = DialogStateName.ALTERNATIVE
@@ -369,8 +423,16 @@ def handle_recommendation(state, act, config):
     if act == "request":
         return handle_restaurant_request(
             state,
-            config,
+            text,
         )
+
+    if act in {"bye", "thankyou"}:
+        state.state = DialogStateName.END
+
+        system_response = response("goodbye")
+        state.last_response = system_response
+
+        return state, system_response
 
     system_response = generate_recommendation(
         state.current_restaurant
@@ -390,7 +452,7 @@ def handle_alternative(state, act, config):
 
     if not state.alternatives:
         system_response = response("noalternative")
-
+        state.state = DialogStateName.RECOMMEND
         state.last_response = system_response
 
         return state, system_response
@@ -422,15 +484,36 @@ def handle_no_match(
     Handle the case where no restaurant matches
     the user's current preferences.
     """
+    if act in {"reqalts", "alternative"}:
+        # User asks for another restaurant
+        system_response = response("noalternative")
+
+        state.last_response = system_response
+
+        return state, system_response
+
+    if act == "request":
+        # User asks about the current restaurant
+        return handle_restaurant_request(
+            state,
+            text,
+        )
 
     if act == "inform":
-        # The user is providing a new or changed preference.
+        # User provides a new/changed preference.
         return handle_preferences(
             state,
             text,
             act,
             config,
         )
+
+    if act == 'ack':
+        system_response = response("acknowledge")
+
+        state.last_response = system_response
+
+        return state, system_response
 
     system_response = response("nomatch")
 
@@ -445,10 +528,26 @@ def transition(
 ):
     act = user_input.dialog_act.lower()
     text = user_input.text
+    print(act)
 
     # ------------------------------------
     # Global transitions
     # ------------------------------------
+    if act in {"bye", "thankyou"} or text in {
+            "bye",
+            "goodbye",
+            "thanks",
+            "thank you",
+            "thankyou",
+        }: # TODO: check with TA if we call use text fallback, because bye is not classified correctly
+
+        state.state = DialogStateName.END
+
+        system_response = response("goodbye")
+
+        state.last_response = system_response
+
+        return state, system_response
 
     if act == "restart":
 
@@ -465,16 +564,6 @@ def transition(
     if act == "repeat":
 
         return state, state.last_response
-
-    if act == "bye":
-
-        state.state = DialogStateName.END
-
-        system_response = response("goodbye")
-
-        state.last_response = system_response
-
-        return state, system_response
 
     # ------------------------------------
     # State-specific transitions
@@ -511,13 +600,25 @@ def transition(
         )
 
     if state.state == DialogStateName.RECOMMEND:
+        if act == "request":
+            return handle_restaurant_request(
+                state,
+                text,
+            )
+
         return handle_recommendation(
             state,
+            text,
             act,
             config,
         )
 
     if state.state == DialogStateName.ALTERNATIVE:
+        if act == "request":
+            return handle_restaurant_request(
+                state,
+                text,
+            )
         return handle_alternative(
             state,
             act,

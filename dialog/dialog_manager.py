@@ -1,15 +1,10 @@
 import classifiers.rule_based as rb
 import classifiers.ml_classifier_1 as ml1
 import classifiers.ml_classifier_2 as ml2
-from dialog.state import DialogState, DialogConfig, UserInput
+from dialog.state import DialogState, DialogConfig, UserInput, DialogStateName
 from dialog.transition import transition
-from dialog.slot_extractor import extract_slots
+from dialog.responses import response
 
-#responses templates from response_generator
-from dialog.response_generator import responses
-
-#for the repeat response, we need to keep track of what has been said previously
-#last_response = None
 
 classifiers = {
     "rulebased": rb,
@@ -31,9 +26,12 @@ def manage(
 
     state = DialogState()
 
-    print("Welcome to the restaurant dialog system.")
+    # Initial system utterance
+    welcome_response = response("welcome")
+    state.last_response = welcome_response
+    print(welcome_response)
 
-    while state.state != "END":
+    while state.state != DialogStateName.END:
 
         utterance = input("> ").strip()
 
@@ -58,7 +56,7 @@ def manage(
         # 2. Transition
         # -----------------------------
 
-        state, response = transition(
+        state, system_response = transition(
             state,
             UserInput(
                 text=utterance,
@@ -71,5 +69,5 @@ def manage(
         # 3. Respond
         # -----------------------------
 
-        if response:
-            print(response)
+        if system_response:
+            print(system_response)
