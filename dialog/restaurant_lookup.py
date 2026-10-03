@@ -22,16 +22,22 @@ def find_restaurants(
 
         for restaurant in reader:
 
-            if food is not None:
-                if restaurant["food"].strip().lower() != food.strip().lower():
+            if food is not None and food.lower() != "any":
+                restaurant_food = (restaurant.get("food") or "").strip().lower()
+
+                if restaurant_food != food.strip().lower():
                     continue
 
-            if price is not None:
-                if restaurant["pricerange"].strip().lower() != price.strip().lower():
+            if price is not None and price.lower() != "any":
+                restaurant_price = (restaurant.get("pricerange") or "").strip().lower()
+
+                if restaurant_price != price.strip().lower():
                     continue
 
-            if area is not None:
-                if restaurant["area"].strip().lower() != area.strip().lower():
+            if area is not None and area.lower() != "any":
+                restaurant_area = (restaurant.get("area") or "").strip().lower()
+
+                if restaurant_area != area.strip().lower():
                     continue
 
             matches.append(restaurant)

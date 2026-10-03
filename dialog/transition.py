@@ -73,6 +73,25 @@ def ask_for_missing_slot(state):
 
     return ""
 
+def get_missing_slot(state):
+    if state.food is None:
+        return "food"
+
+    if state.price is None:
+        return "price"
+
+    if state.area is None:
+        return "area"
+
+    return None
+
+def reset_restaurant_results(state):
+    """
+    Clear restaurant-specific results after the user's preferences have changed.
+    """
+    state.current_restaurant = None
+    state.alternatives = []
+
 
 def handle_preferences(
     state,
@@ -81,16 +100,54 @@ def handle_preferences(
     config,
 ):
     if act != "inform":
-        system_response = response("askfood")
+        system_response = ask_for_missing_slot(state)
 
         state.last_response = system_response
 
         return state, system_response
 
+    normalized_text = text.lower().strip()
+
+    no_preference = {"any", "i don't care", "i dont care", "dont care", "doesn't matter", "does not matter", "whatever", "anything", "no preference", "i have no preference"}
+    if normalized_text in no_preference:
+        missing_slot = get_missing_slot(state)
+
+        if missing_slot is not None:
+            setattr(state, missing_slot, "any")
+
+            if all_preferences_known(state):
+                state.state = DialogStateName.LOOKUP
+
+                return transition(
+                    state,
+                    UserInput(
+                        text="",
+                        dialog_act="internal_lookup",
+                    ),
+                    config,
+                )
+
+            system_response = ask_for_missing_slot(state)
+
+            state.last_response = system_response
+
+            return state, system_response
+
     results = extract_slots(
         text,
         fallback=config.slot_fallback,
     )
+
+    print("EXTRACTED SLOTS:")
+    for result in results:
+        print(
+            "slot =", result.slot,
+            "value =", result.value,
+            "original =", result.original_value,
+            "needs_confirmation =", result.needs_confirmation,
+        )
+
+    changed_preferences = False
 
     for result in results:
 
@@ -98,11 +155,19 @@ def handle_preferences(
             state.pending_confirmations.append(result)
 
         else:
+            old_value = getattr(state, result.slot, None)
+
+            if old_value != result.value:
+                changed_preferences = True
+
             setattr(
                 state,
                 result.slot,
                 result.value,
             )
+
+    if changed_preferences:
+        reset_restaurant_results(state)
 
     # --------------------------------
     # Need confirmation?
@@ -120,10 +185,7 @@ def handle_preferences(
 
         return state, system_response
 
-    # --------------------------------
-    # Check whether all preferences
-    # are known
-    # --------------------------------
+    # Check whether all preferences are known
 
     if all_preferences_known(state):
 
@@ -212,11 +274,16 @@ def handle_confirmation(
         "correct",
     }:
 
+        old_value = getattr(state, result.slot, None)
+
         setattr(
             state,
             result.slot,
             result.value,
         )
+
+        if old_value != result.value:
+            reset_restaurant_results(state)
 
         state.pending_confirmations.pop(0)
 
@@ -387,7 +454,7 @@ def handle_restaurant_request(state, text):
         else:
             system_response = response("restaurant_info_unknown", restaurantname=restaurant["restaurantname"])
 
-    elif any(word in text for word in {"phone", "telephone"}):
+    elif any(word in text for word in {"phone", "telephone", "number"}):
         phone = restaurant.get("phone")
         if phone:
             system_response = response(
@@ -451,8 +518,8 @@ def handle_alternative(state, act, config):
     """
 
     if not state.alternatives:
-        system_response = response("noalternative")
-        state.state = DialogStateName.RECOMMEND
+        state.state = DialogStateName.OFFER_PREFERENCE_CHANGE
+        system_response = response("offer_preference_change")
         state.last_response = system_response
 
         return state, system_response
@@ -484,6 +551,19 @@ def handle_no_match(
     Handle the case where no restaurant matches
     the user's current preferences.
     """
+    extracted = extract_slots(
+        text,
+        fallback=config.slot_fallback,
+    )
+
+    if extracted:
+        return handle_preferences(
+            state,
+            text,
+            "inform",
+            config,
+        )
+
     if act in {"reqalts", "alternative"}:
         # User asks for another restaurant
         system_response = response("noalternative")
@@ -516,6 +596,125 @@ def handle_no_match(
         return state, system_response
 
     system_response = response("nomatch")
+
+    state.last_response = system_response
+
+    return state, system_response
+
+def handle_offer_preference_change(
+    state,
+    text,
+    act,
+    config,
+):
+    """
+    Handle the state where all restaurants for the current
+    preferences have been exhausted.
+
+    The user may:
+      - change a preference
+      - ask for information about the current restaurant
+      - decline / end the conversation
+      - ask to repeat
+    """
+
+    # --------------------------------
+    # User wants to change preferences
+    # --------------------------------
+
+    if act == "inform":
+        state.state = DialogStateName.COLLECT_PREFERENCES
+
+        return handle_preferences(
+            state,
+            text,
+            act,
+            config,
+        )
+
+    # --------------------------------
+    # User asks about the restaurant
+    # --------------------------------
+
+    if act == "request":
+        return handle_restaurant_request(
+            state,
+            text,
+        )
+
+    # --------------------------------
+    # User accepts the offer
+    # --------------------------------
+
+    if act == "affirm" or text in {
+        "yes",
+        "y",
+        "yeah",
+        "sure",
+        "okay",
+        "ok",
+        "change",
+    }:
+        state.state = DialogStateName.COLLECT_PREFERENCES
+
+        system_response = response(
+            "ask_preference_change"
+        )
+
+        state.last_response = system_response
+
+        return state, system_response
+
+    # --------------------------------
+    # User declines
+    # --------------------------------
+
+    if act in {"deny", "negate"} or text in {
+        "no",
+        "n",
+        "nope",
+    }:
+        state.state = DialogStateName.END
+
+        system_response = response("goodbye")
+
+        state.last_response = system_response
+
+        return state, system_response
+
+    # --------------------------------
+    # End conversation
+    # --------------------------------
+
+    if act in {"bye", "thankyou"} or text in {
+        "bye",
+        "goodbye",
+        "thanks",
+        "thank you",
+        "thankyou",
+    }:
+        state.state = DialogStateName.END
+
+        system_response = response("goodbye")
+
+        state.last_response = system_response
+
+        return state, system_response
+
+    # --------------------------------
+    # Repeat
+    # --------------------------------
+
+    if act == "repeat":
+        return state, state.last_response
+
+    # --------------------------------
+    # Otherwise
+    # --------------------------------
+
+    system_response = response(
+        "offer_preference_change"
+    )
 
     state.last_response = system_response
 
@@ -600,6 +799,14 @@ def transition(
         )
 
     if state.state == DialogStateName.RECOMMEND:
+        # User wants to change preferences
+        if act == "inform":
+            return handle_preferences(
+                state,
+                text,
+                act,
+                config,
+            )
         if act == "request":
             return handle_restaurant_request(
                 state,
@@ -614,6 +821,14 @@ def transition(
         )
 
     if state.state == DialogStateName.ALTERNATIVE:
+        # User wants to change preferences
+        if act == "inform":
+            return handle_preferences(
+                state,
+                text,
+                act,
+                config,
+            )
         if act == "request":
             return handle_restaurant_request(
                 state,
@@ -627,6 +842,14 @@ def transition(
 
     if state.state == DialogStateName.NO_MATCH:
         return handle_no_match(
+            state,
+            text,
+            act,
+            config,
+        )
+
+    if state.state == DialogStateName.OFFER_PREFERENCE_CHANGE:
+        return handle_offer_preference_change(
             state,
             text,
             act,

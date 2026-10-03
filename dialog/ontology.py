@@ -18,6 +18,7 @@ ONTOLOGY = {
         "caribbean",
         "arabic",
         "vietnamese",
+        "tuscan"
     ],
     "price": [
         "cheap",
