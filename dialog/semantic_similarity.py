@@ -53,7 +53,6 @@ def find_semantic_match(
     Returns:
         (best_value, best_score) or None if the best score is below threshold.
     """
-    print("debug find semantic")
     candidate_embedding = encode_bert([candidate])
 
     ontology_values = ONTOLOGY[slot]

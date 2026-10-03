@@ -107,10 +107,10 @@ def handle_preferences(
         return state, system_response
 
     normalized_text = text.lower().strip()
-
+    missing_slot = get_missing_slot(state)
     no_preference = {"any", "i don't care", "i dont care", "dont care", "doesn't matter", "does not matter", "whatever", "anything", "no preference", "i have no preference"}
     if normalized_text in no_preference:
-        missing_slot = get_missing_slot(state)
+
 
         if missing_slot is not None:
             setattr(state, missing_slot, "any")
@@ -136,16 +136,8 @@ def handle_preferences(
     results = extract_slots(
         text,
         fallback=config.slot_fallback,
+        expected_slot=missing_slot,
     )
-
-    print("EXTRACTED SLOTS:")
-    for result in results:
-        print(
-            "slot =", result.slot,
-            "value =", result.value,
-            "original =", result.original_value,
-            "needs_confirmation =", result.needs_confirmation,
-        )
 
     changed_preferences = False
 
@@ -551,9 +543,11 @@ def handle_no_match(
     Handle the case where no restaurant matches
     the user's current preferences.
     """
+    missing_slot = get_missing_slot(state)
     extracted = extract_slots(
         text,
         fallback=config.slot_fallback,
+        expected_slot=missing_slot,
     )
 
     if extracted:
@@ -727,7 +721,6 @@ def transition(
 ):
     act = user_input.dialog_act.lower()
     text = user_input.text
-    print(act)
 
     # ------------------------------------
     # Global transitions
@@ -754,7 +747,7 @@ def transition(
             state=DialogStateName.WELCOME
         )
 
-        system_response = response("restart")
+        system_response = response("welcome")
 
         new_state.last_response = system_response
 

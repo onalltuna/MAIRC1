@@ -56,7 +56,7 @@ RESPONSES = {
     "offer_preference_change":"I'm afraid that's all the options I have. Would you like to change a preference?",
     "ask_preference_change": "What preference would you like to change?",
     "goodbye":
-        "Goodbye!",
+        "Good bye!",
     "ended":
         "The conversation has ended.",
 }
