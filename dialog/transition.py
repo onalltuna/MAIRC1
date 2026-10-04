@@ -5,6 +5,8 @@ from dialog.slot_extractor import extract_slots
 from dialog.responses import response
 from dialog.state import DialogState, DialogStateName
 from dialog.restaurant_lookup import find_restaurants
+from dialog.reasoning import derive_properties, parse_additional_requirement, apply_rules
+import re
 
 
 @dataclass
@@ -12,38 +14,110 @@ class UserInput:
     text: str
     dialog_act: str
 
+SLOT_TO_RESTAURANT_FIELD = {
+    "food": "food",
+    "price": "pricerange",  
+    "area": "area",
+}
 
-def handle_welcome(
-    state,
-    text,
-    act,
-    config,
-):
-    """
-    Handle the first user turn in the dialogue.
-    """
+NO_PREFERENCE_PHRASES = {
+    "any",
+    "i don't care",
+    "i dont care",
+    "dont care",
+    "don't care",
+    "doesn't matter",
+    "does not matter",
+    "whatever",
+    "anything",
+    "no preference",
+    "i have no preference",
+    "it doesn't matter",
+}
 
-    if act == "inform":
-        return handle_preferences(
-            state,
-            text,
-            act,
-            config,
-        )
 
-    if act == "request":
-        system_response = response("welcome")
+def is_no_preference(normalized_text: str) -> bool:
+    # exact match — covers short standalone answers like "any" or "whatever"
+    if normalized_text in NO_PREFERENCE_PHRASES:
+        return True
 
-        state.state = DialogStateName.COLLECT_PREFERENCES
+    for phrase in NO_PREFERENCE_PHRASES:
+        if phrase == "any":
+            # "any" needs a word-boundary check — a plain substring
+            # check would incorrectly match inside words like "many"
+            if re.search(r"\bany\b", normalized_text):
+                return True
+        elif phrase in normalized_text:
+            return True
+
+    return False
+
+
+def handle_restaurant_confirmation(state, text, config):
+    restaurant = state.current_restaurant
+
+    if restaurant is None:
+        system_response = response("nomatch")
         state.last_response = system_response
-
         return state, system_response
 
-    system_response = response("welcome")
+    results = extract_slots(text, fallback=config.slot_fallback)
+
+    if not results:
+        system_response = response("confirm_unclear")
+        state.last_response = system_response
+        return state, system_response
+
+    # handle the first slot the user asked about
+    result = results[0]
+    field = SLOT_TO_RESTAURANT_FIELD.get(result.slot, result.slot)
+    actual_value = restaurant.get(field)
+
+    if actual_value == result.value:
+        system_response = response("confirm_yes")
+    else:
+        system_response = response(
+            "confirm_no",
+            field=field,
+            actual_value=actual_value,
+        )
+
+    state.last_response = system_response
+    return state, system_response
+
+def has_multiple_matches(state) -> bool:
+    """
+    True when more than one restaurant matches the current food/price/area
+    preferences — i.e. asking about additional requirements is actually
+    useful for narrowing down a choice. If there are 0 or 1 matches,
+    there's nothing to narrow, so we skip straight to lookup.
+    """
+    matches = find_restaurants(food=state.food, price=state.price, area=state.area)
+    return len(matches) > 1
+
+
+def handle_additional_requirements(state, text, act, config):
+    normalized = text.lower().strip()
+    no_requirement = {"no", "n", "none", "nope", "no thanks", "nothing"}
+
+    if act in {"negate", "deny"} or normalized in no_requirement:
+        state.additional_requirement = None
+    else:
+        prop, desired = parse_additional_requirement(text)
+        state.additional_requirement = {"property": prop, "value": desired} if prop else None
+
+    state.additional_requirement_asked = True   # separate field — doesn't clobber the value above
+    state.state = DialogStateName.LOOKUP
+    return transition(state, UserInput(text="", dialog_act="internal_lookup"), config)
+
+
+def handle_welcome(state, text, act, config):
+    if act == "inform":
+        return handle_preferences(state, text, act, config)
 
     state.state = DialogStateName.COLLECT_PREFERENCES
+    system_response = ask_for_missing_slot(state)
     state.last_response = system_response
-
     return state, system_response
 
 
@@ -65,25 +139,27 @@ def ask_for_missing_slot(state):
     if state.food is None:
         return response("askfood")
 
-    if state.price is None:
-        return response("askpricerange")
-
     if state.area is None:
         return response("askarea")
 
+    if state.price is None:
+        return response("askpricerange")
+
     return ""
+
 
 def get_missing_slot(state):
     if state.food is None:
         return "food"
 
-    if state.price is None:
-        return "price"
-
     if state.area is None:
         return "area"
 
+    if state.price is None:
+        return "price"
+
     return None
+
 
 def reset_restaurant_results(state):
     """
@@ -99,45 +175,51 @@ def handle_preferences(
     act,
     config,
 ):
-    if act != "inform":
-        system_response = ask_for_missing_slot(state)
-
-        state.last_response = system_response
-
-        return state, system_response
-
     normalized_text = text.lower().strip()
     missing_slot = get_missing_slot(state)
-    no_preference = {"any", "i don't care", "i dont care", "dont care", "doesn't matter", "does not matter", "whatever", "anything", "no preference", "i have no preference"}
-    if normalized_text in no_preference:
+    
+    # no_preference = {"any", "i don't care", "i dont care", "dont care", "doesn't matter", "does not matter", "whatever", "anything", "no preference", "i have no preference", "it doesn't matter"}
 
+    results = extract_slots(text, fallback=config.slot_fallback, expected_slot=missing_slot)
+    # print(f"\n results: {results}")
 
+    # The classifier may have mislabeled an utterance that still
+    # contains a usable preference (e.g. "How about Lebanese food"
+    # classified as "reqalts"). Only bail out to a generic re-ask when
+    # we truly found nothing usable.
+    if act != "inform" and not results and not is_no_preference(normalized_text):
+        system_response = ask_for_missing_slot(state)
+        state.last_response = system_response
+        return state, system_response
+
+    if not results and is_no_preference(normalized_text):
         if missing_slot is not None:
             setattr(state, missing_slot, "any")
-
             if all_preferences_known(state):
-                state.state = DialogStateName.LOOKUP
+                if not state.additional_requirement and has_multiple_matches(state):
+                    state.state = DialogStateName.ADDITIONAL_REQUIREMENT
+                    print(f"\nstateee1: {state}\n")
+                    system_response = response("ask_additional")
+                    state.last_response = system_response
+                    return state, system_response
 
-                return transition(
-                    state,
-                    UserInput(
-                        text="",
-                        dialog_act="internal_lookup",
-                    ),
-                    config,
-                )
+                state.state = DialogStateName.LOOKUP
+                return transition(state, UserInput(text="", dialog_act="internal_lookup"), config)
 
             system_response = ask_for_missing_slot(state)
-
             state.last_response = system_response
-
             return state, system_response
 
-    results = extract_slots(
-        text,
-        fallback=config.slot_fallback,
-        expected_slot=missing_slot,
-    )
+
+
+    # print(f"hereeee: {state}")
+    # Nothing was extracted, but we were specifically expecting a value
+    # for `missing_slot` — the user likely gave an unrecognized preference.
+    if not results and missing_slot is not None:
+        system_response = response("unrecognized_preference")
+        state.state = DialogStateName.COLLECT_PREFERENCES
+        state.last_response = system_response
+        return state, system_response
 
     changed_preferences = False
 
@@ -178,10 +260,18 @@ def handle_preferences(
         return state, system_response
 
     # Check whether all preferences are known
-
+    # print(f"asdasd: {state}")
     if all_preferences_known(state):
+        if not state.additional_requirement and has_multiple_matches(state):
+            print(f"\nstateee2: {state}\n")
+            state.state = DialogStateName.ADDITIONAL_REQUIREMENT
+            system_response = response("ask_additional")
+            state.last_response = system_response
+            return state, system_response
 
+        # already asked earlier in the conversation — skip straight to lookup
         state.state = DialogStateName.LOOKUP
+        return transition(state, UserInput(text="", dialog_act="internal_lookup"), config)
 
         return transition(
             state,
@@ -349,70 +439,62 @@ def handle_confirmation(
     return state, system_response
 
 
+
 def handle_lookup(state, config):
+    matches = find_restaurants(food=state.food, price=state.price, area=state.area)
 
-    matches = find_restaurants(
-        food=state.food,
-        price=state.price,
-        area=state.area,
-    )
+    if state.additional_requirement:
+        prop = state.additional_requirement["property"]
+        desired = state.additional_requirement["value"]
 
-    # --------------------------------
-    # No matches
-    # --------------------------------
+        filtered = []
+        for r in matches:
+            # print(f"DEBUG raw dict: {r}")
+            # print(f"\nDEBUG fired rules: {apply_rules(r)}\n")
+            # print(f"DEBUG derived: {derive_properties(r)}")
+            derived = derive_properties(r, strategy=config.reasoning_strategy)
+            if prop in derived and derived[prop][0] == desired:
+                r = dict(r)
+                r["_reasoning_property"] = prop
+                r["_reasoning_explanation"] = derived[prop][1]
+                filtered.append(r)
+        matches = filtered
 
     if not matches:
-
         state.state = DialogStateName.NO_MATCH
-
-        system_response = response("nomatch")
-
+        system_response = response("nomatch", food=state.food, area=state.area, pricerange=state.price)
         state.last_response = system_response
-
         return state, system_response
 
-    # --------------------------------
-    # Randomly choose one restaurant
-    # --------------------------------
-
     selected = random.choice(matches)
-
     state.current_restaurant = selected
-
-    # Store the other matching restaurants
-    state.alternatives = [
-        restaurant
-        for restaurant in matches
-        if restaurant != selected
-    ]
-
+    state.alternatives = [r for r in matches if r != selected]
     state.state = DialogStateName.RECOMMEND
-
-    return transition(
-        state,
-        UserInput(
-            text="",
-            dialog_act="internal_recommend",
-        ),
-        config,
-    )
+    return transition(state, UserInput(text="", dialog_act="internal_recommend"), config)
 
 
 def generate_recommendation(restaurant):
-    """
-    Generate the recommendation using a response template.
-    """
-
     if restaurant is None:
         return response("nomatch")
 
-    return response(
+    base = response(
         "recommend",
         restaurantname=restaurant["restaurantname"],
         food=restaurant["food"],
         area=restaurant["area"],
         pricerange=restaurant["pricerange"],
     )
+
+    explanation = restaurant.get("_reasoning_explanation")
+    if explanation:
+        prop = restaurant["_reasoning_property"].replace("_", " ")
+        base += f" The restaurant is {prop} because {explanation}."
+
+        note = restaurant.get("_reasoning_contradiction")
+        if note:
+            base += f" (Note: one rule suggested otherwise - {note}.)"
+
+    return base
 
 def handle_restaurant_request(state, text):
     restaurant = state.current_restaurant
@@ -444,7 +526,7 @@ def handle_restaurant_request(state, text):
                 postcode=restaurant["postcode"],
             )
         else:
-            system_response = response("restaurant_info_unknown", restaurantname=restaurant["restaurantname"])
+            system_response = response("restaurant_info_unknown", info = "postcode",restaurantname=restaurant["restaurantname"])
 
     elif any(word in text for word in {"phone", "telephone", "number"}):
         phone = restaurant.get("phone")
@@ -471,34 +553,31 @@ def handle_restaurant_request(state, text):
 def handle_recommendation(state, text, act, config):
 
     if act in {"reqalts", "alternative"}:
-        state.state = DialogStateName.ALTERNATIVE
+        # The classifier may have mislabeled a new preference as a
+        # request for "another one from the same list" (e.g. "How
+        # about Chinese food?" misclassified as "reqalts"). Check for
+        # extractable slot content before falling back to alternatives.
+        missing_slot = get_missing_slot(state)
+        extracted = extract_slots(text, fallback=config.slot_fallback, expected_slot=missing_slot)
 
-        return handle_alternative(
-            state,
-            act,
-            config,
-        )
+        if extracted:
+            state.state = DialogStateName.COLLECT_PREFERENCES
+            return handle_preferences(state, text, "inform", config)
+
+        state.state = DialogStateName.ALTERNATIVE
+        return handle_alternative(state, act, config)
 
     if act == "request":
-        return handle_restaurant_request(
-            state,
-            text,
-        )
+        return handle_restaurant_request(state, text)
 
     if act in {"bye", "thankyou"}:
         state.state = DialogStateName.END
-
         system_response = response("goodbye")
         state.last_response = system_response
-
         return state, system_response
 
-    system_response = generate_recommendation(
-        state.current_restaurant
-    )
-
+    system_response = generate_recommendation(state.current_restaurant)
     state.last_response = system_response
-
     return state, system_response
 
 def handle_alternative(state, act, config):
@@ -589,7 +668,7 @@ def handle_no_match(
 
         return state, system_response
 
-    system_response = response("nomatch")
+    system_response = response("nomatch",config)
 
     state.last_response = system_response
 
@@ -785,6 +864,9 @@ def transition(
             config,
         )
 
+    if state.state == DialogStateName.ADDITIONAL_REQUIREMENT:
+        return handle_additional_requirements(state, text, act, config)
+
     if state.state == DialogStateName.LOOKUP:
         return handle_lookup(
             state,
@@ -805,6 +887,11 @@ def transition(
                 state,
                 text,
             )
+        if act == "confirm":
+            return handle_restaurant_confirmation(state, text, config)
+
+        if act == "reqmore":
+            return handle_offer_preference_change(state, text, act, config)
 
         return handle_recommendation(
             state,
@@ -827,6 +914,8 @@ def transition(
                 state,
                 text,
             )
+        if act == "confirm":
+            return handle_restaurant_confirmation(state, text, config)
         return handle_alternative(
             state,
             act,

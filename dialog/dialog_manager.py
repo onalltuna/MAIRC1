@@ -6,13 +6,6 @@ from dialog.transition import transition
 from dialog.responses import response
 
 
-classifiers = {
-    "rulebased": rb,
-    "ml1": ml1,
-    "ml2": ml2,
-}
-
-
 def manage(
     is_grouped,
     use_bert,
@@ -29,7 +22,6 @@ def manage(
     # Initial system utterance
     welcome_response = response("welcome")
     state.last_response = welcome_response
-    print(welcome_response)
 
     while state.state != DialogStateName.END:
 
@@ -52,10 +44,13 @@ def manage(
             use_bert=use_bert,
         )
 
+        # print(f"prediction: {pred}")
+
         # -----------------------------
         # 2. Transition
         # -----------------------------
 
+        # print(f"\nprevious_state: {state}")
         state, system_response = transition(
             state,
             UserInput(
@@ -64,10 +59,11 @@ def manage(
             ),
             config,
         )
+        
 
         # -----------------------------
         # 3. Respond
         # -----------------------------
 
         if system_response:
-            print(system_response)
+            print(f"\n{system_response}")

@@ -212,7 +212,7 @@ def extract_slots(
     wildcards = [
         ("food", ["any food", "any cuisine"]),
         ("price", ["any price", "any pricing"]),
-        ("area", ["any area", "anywhere"]),
+        ("area", ["any area", "anywhere", "any part"]),
     ]
 
     for slot, phrases in wildcards:

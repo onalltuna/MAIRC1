@@ -143,6 +143,6 @@ python main.py test --classifier ml2 --grouped y
 python main.py train --classifier rulebased --grouped n
 python main.py test --classifier ml1 --grouped y --bert y
 python main.py prompt --classifier ml1 --grouped y --bert y
-python main.py dialog --classifier ml2 --grouped n
+python main.py dialog --grouped n
 python main.py heldout --classifier rulebased --grouped n --bert n
 ```

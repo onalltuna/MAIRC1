@@ -6,6 +6,7 @@ from typing import Optional
 class DialogConfig:
     slot_fallback: str = "levenshtein"
     reasoning_transparency: bool = True
+    reasoning_strategy: str = "positive_wins"
 
 class DialogStateName:
     WELCOME = "WELCOME"
