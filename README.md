@@ -37,7 +37,7 @@ Many utterances in the dataset are not uniwue. With a normal random split, the s
 Therefore, we create two split variants:
 
 - **Original split** (`--grouped n`) - a stratified random 85/15 train-test split over all utterance instances. Duplicate utterances may occur in both train and test.
-- **Grouped split** (`--grouped y`) - an 85/15 split over unique utterance groups, where identical utterances are kept in the same split. Stratified sampling is applied where possible. The `reqmore` class has only one unique utterance group (`more`), so it is assigned to the training set and excluded from the stratified group-level split.
+- **Grouped split** (`--grouped y`) - an 86/15 split over unique utterance groups, where identical utterances are kept in the same split. Stratified sampling is applied where possible. The `reqmore` class has only one unique utterance group (`more`), so it is assigned to the training set and excluded from the stratified group-level split.
 
 ### Processed data
 
@@ -47,11 +47,11 @@ The processed train/test files for both split variants are already included unde
 python data_preprocess.py
 ```
 
-On Windows, if `python` is not recognized, use: 
+```markdown
+On Windows, if `python`is not recognized, use: 
 
 ```powershell
 py data_preprocess.py
-```
 
 ## Requirements
 
@@ -83,7 +83,7 @@ uv pip install -r requirements.txt
 python main.py train --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py test --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py prompt --classifier <name> --grouped <y/n> [--bert <y/n>]
-python main.py dialog --grouped <y/n> [--reasoning-transparency <y/n>] [--bert <y/n>]
+python main.py dialog --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py heldout --classifier <name> --grouped <y/n> [--bert <y/n>]
 ```
 
@@ -124,15 +124,6 @@ Controls which feature representation is used for the ML classifiers (`ml1` and 
 
 Note that `--bert` only applies to `ml1` and `ml2` — it has no effect on `rulebased`, since the rule-based classifier does not use a learned feature representation at all.
 
-### `--reasoning-transparency`
-
-Controls whether the dialog system gives an explanation behind the answers of the system.
-
-- `--reasoning-transparency y` — shows the explanation of the reasoning. This is the default.
-- `--reasoning-transparency n` — hides the reasoning explanation and only gives the answer (recommendation).
-
-This option implements the configurable feature for part 2. The reasoning transparency can be switched on or off while keeping the rest of the dialog system the same.
-
 ### Example: running BoW + a classifier
 
 To explicitly run with bag-of-words features, add `--bert n` (or simply leave `--bert` out, since `n` is the default):
@@ -152,7 +143,6 @@ python main.py test --classifier ml2 --grouped y
 python main.py train --classifier rulebased --grouped n
 python main.py test --classifier ml1 --grouped y --bert y
 python main.py prompt --classifier ml1 --grouped y --bert y
-python main.py dialog --grouped y --bert n --reasoning-transparency y
-python main.py dialog --grouped y --bert n --reasoning-transparency n
+python main.py dialog --grouped n
 python main.py heldout --classifier rulebased --grouped n --bert n
 ```

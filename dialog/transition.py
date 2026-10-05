@@ -473,7 +473,7 @@ def handle_lookup(state, config):
     return transition(state, UserInput(text="", dialog_act="internal_recommend"), config)
 
 
-def generate_recommendation(restaurant, show_reasoning=True):
+def generate_recommendation(restaurant):
     if restaurant is None:
         return response("nomatch")
 
@@ -486,7 +486,7 @@ def generate_recommendation(restaurant, show_reasoning=True):
     )
 
     explanation = restaurant.get("_reasoning_explanation")
-    if show_reasoning and explanation:
+    if explanation:
         prop = restaurant["_reasoning_property"].replace("_", " ")
         base += f" The restaurant is {prop} because {explanation}."
 
@@ -576,7 +576,7 @@ def handle_recommendation(state, text, act, config):
         state.last_response = system_response
         return state, system_response
 
-    system_response = generate_recommendation(state.current_restaurant, show_reasoning=config.reasoning_transparency)
+    system_response = generate_recommendation(state.current_restaurant)
     state.last_response = system_response
     return state, system_response
 

@@ -54,9 +54,9 @@ def activate_prompt_with_classifier(classifier_name, is_grouped, use_bert):
         sys.exit(1)
 
 
-def activate_dialog_with_classifier(is_grouped, use_bert, slot_fallback, reasoning_transparency):
+def activate_dialog_with_classifier(is_grouped, use_bert, slot_fallback):
     try:
-        dm.manage(is_grouped, use_bert, slot_fallback, reasoning_transparency)
+        dm.manage(is_grouped, use_bert, slot_fallback)
     except FileNotFoundError as e:
         print(f"Error: could not find a required model file: '{e.filename}'.")
         print("Make sure you've trained this classifier configuration first.")
@@ -108,13 +108,6 @@ def main():
         help="Slot extraction fallback method"
     )
 
-    dialog_parser.add_argument(
-        "--reasoning-transparency",
-        choices=["y","n"],
-        default= "y",
-        help="Show or hide the reasoning behind the system's responses"
-    )
-
     heldout_parser = subparsers.add_parser("heldout", help="Held-out test set")
     heldout_parser.add_argument("--classifier", choices=classifiers.keys(), required=True)
     heldout_parser.add_argument("--grouped",choices=["y", "n"], required=True)
@@ -131,7 +124,7 @@ def main():
     elif args.command == "prompt":
         activate_prompt_with_classifier(args.classifier, is_grouped, use_bert)
     elif args.command == "dialog":
-        activate_dialog_with_classifier(is_grouped, use_bert, args.slot_fallback, args.reasoning_transparency == "y")
+        activate_dialog_with_classifier(is_grouped, use_bert, args.slot_fallback)
     elif args.command == "heldout":
         test_classifier(args.classifier, isHeldOut=True, isGrouped=is_grouped, use_bert=use_bert)
 
