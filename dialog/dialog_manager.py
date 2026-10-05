@@ -1,6 +1,4 @@
-import classifiers.rule_based as rb
 import classifiers.ml_classifier_1 as ml1
-import classifiers.ml_classifier_2 as ml2
 from dialog.state import DialogState, DialogConfig, UserInput, DialogStateName
 from dialog.transition import transition
 from dialog.responses import response
@@ -32,14 +30,13 @@ def manage(
         if not utterance:
             continue
 
-        if utterance == "exit":
+        if utterance == "/exit":
             print("Exiting dialog manager")
             break
 
         # -----------------------------
         # 1. Classify
         # -----------------------------
-
         pred = ml1.predict(
             utterance=utterance,
             isGrouped=is_grouped,

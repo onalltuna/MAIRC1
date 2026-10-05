@@ -3,7 +3,6 @@ import sys
 import classifiers.rule_based as rb
 import classifiers.ml_classifier_1 as ml1
 import classifiers.ml_classifier_2 as ml2
-import dialog.dialog_manager as dm
 import prompt as prompt
 
 classifiers = {
@@ -56,6 +55,7 @@ def activate_prompt_with_classifier(classifier_name, is_grouped, use_bert):
 
 def activate_dialog_with_classifier(is_grouped, use_bert, slot_fallback, reasoning_transparency):
     try:
+        import dialog.dialog_manager as dm
         dm.manage(is_grouped, use_bert, slot_fallback, reasoning_transparency)
     except FileNotFoundError as e:
         print(f"Error: could not find a required model file: '{e.filename}'.")

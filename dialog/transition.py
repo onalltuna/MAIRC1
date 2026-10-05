@@ -1,6 +1,5 @@
 import random
 from dataclasses import dataclass
-
 from dialog.slot_extractor import extract_slots
 from dialog.responses import response
 from dialog.state import DialogState, DialogStateName
@@ -181,7 +180,6 @@ def handle_preferences(
     # no_preference = {"any", "i don't care", "i dont care", "dont care", "doesn't matter", "does not matter", "whatever", "anything", "no preference", "i have no preference", "it doesn't matter"}
 
     results = extract_slots(text, fallback=config.slot_fallback, expected_slot=missing_slot)
-    # print(f"\n results: {results}")
 
     # The classifier may have mislabeled an utterance that still
     # contains a usable preference (e.g. "How about Lebanese food"
@@ -198,7 +196,6 @@ def handle_preferences(
             if all_preferences_known(state):
                 if not state.additional_requirement and has_multiple_matches(state):
                     state.state = DialogStateName.ADDITIONAL_REQUIREMENT
-                    print(f"\nstateee1: {state}\n")
                     system_response = response("ask_additional")
                     state.last_response = system_response
                     return state, system_response
@@ -212,7 +209,6 @@ def handle_preferences(
 
 
 
-    # print(f"hereeee: {state}")
     # Nothing was extracted, but we were specifically expecting a value
     # for `missing_slot` — the user likely gave an unrecognized preference.
     if not results and missing_slot is not None:
@@ -260,10 +256,8 @@ def handle_preferences(
         return state, system_response
 
     # Check whether all preferences are known
-    # print(f"asdasd: {state}")
     if all_preferences_known(state):
         if not state.additional_requirement and has_multiple_matches(state):
-            print(f"\nstateee2: {state}\n")
             state.state = DialogStateName.ADDITIONAL_REQUIREMENT
             system_response = response("ask_additional")
             state.last_response = system_response
@@ -449,9 +443,6 @@ def handle_lookup(state, config):
 
         filtered = []
         for r in matches:
-            # print(f"DEBUG raw dict: {r}")
-            # print(f"\nDEBUG fired rules: {apply_rules(r)}\n")
-            # print(f"DEBUG derived: {derive_properties(r)}")
             derived = derive_properties(r, strategy=config.reasoning_strategy)
             if prop in derived and derived[prop][0] == desired:
                 r = dict(r)

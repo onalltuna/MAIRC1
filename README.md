@@ -15,12 +15,24 @@ This project implements a restaurant recommendation dialog system in two parts. 
 ├── main.py                     # CLI entry point (train / test / prompt / dialog / heldout)
 ├── data_preprocess.py          # Generates processed train/test splits from raw data
 ├── classifiers/
+│   ├── bert_encoder.py
 │   ├── rule_based.py           # Keyword-matching baseline
 │   ├── ml_classifier_1.py      # ml1 — MLP (BoW and DistilBERT variants)
-│   └── ml_classifier_2.py      # ml2 — Logistic Regression (BoW and DistilBERT variants)
+│   └── ml_classifier_2.py      # ml2 — Logistic Regression (BoW and DistilBERT variants)  
 ├── dialog/
-│   └── dialog_manager.py       # Full terminal-based dialog system (Part 1b)
+│   ├── dialog_manager.py       # Full terminal-based dialog system (Part 1b)
+│   ├── ontology.py
+│   ├── reasoning.py
+│   ├── response_generator.py
+│   ├── responses.py
+│   ├── restaurant_info_extenden.csv
+│   ├── restaurant_lookup.py
+│   ├── semantic_similarity.py
+│   ├── slot_extractor.py
+│   ├── state.py
+│   ├── transition.py
 ├── prompt.py                   # Prompt-based single-utterance classification interface
+├── evaluate.py                
 ├── data/
 │   ├── raw/                    # Raw dataset + held-out test file
 │   └── processed/              # Original and grouped train/test splits

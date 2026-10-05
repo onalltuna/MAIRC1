@@ -1,7 +1,3 @@
-import joblib
-from sklearn.metrics import accuracy_score, balanced_accuracy_score
-from transformers import DistilBertTokenizerFast, DistilBertModel
-import torch
 import classifiers.rule_based as rb
 import classifiers.ml_classifier_1 as ml1
 import classifiers.ml_classifier_2 as ml2
@@ -69,18 +65,3 @@ def get_model_paths(classifier_name, is_grouped, use_bert):
     )
 
     return model_path, vectorizer_path
-
-
-def encode_bert(texts):
-    tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
-    bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
-    bert_model.eval()
-
-    encoded = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
-
-    with torch.no_grad():
-        outputs = bert_model(**encoded)
-        hidden = outputs.last_hidden_state 
-
-    embeddings = hidden.mean(dim=1)
-    return embeddings.numpy()
