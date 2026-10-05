@@ -18,6 +18,9 @@ ONTOLOGY = {
         "caribbean",
         "arabic",
         "vietnamese",
+        "tuscan",
+        "seafood",
+        "lebanese"
     ],
     "price": [
         "cheap",
@@ -30,5 +33,6 @@ ONTOLOGY = {
         "south",
         "east",
         "west",
+        "center"
     ],
 }

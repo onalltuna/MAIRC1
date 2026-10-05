@@ -82,6 +82,7 @@ def extract_by_levenshtein(candidate: str, slot: str, max_distance: int = 2)-> O
     Fallback to recover a slot value using Levenshtein edit distance when keyword matching does not work.
     When Levenshtein returns a value that is not an exact match, it requires confirmation.
     """
+
     if slot not in ONTOLOGY:
         raise ValueError(f"Unknown slot: {slot}")
 
@@ -108,27 +109,35 @@ def extract_by_levenshtein(candidate: str, slot: str, max_distance: int = 2)-> O
     )
 
 
-def extract_candidates(text: str) -> list[tuple[str, str]]:
+def extract_candidates(text: str, expected_slot: Optional[str] = None) -> list[tuple[str, str]]:
     """
     Identify the likely slot and candidate value from user's utterance.
     """
     text = text.lower().strip()
     candidates = []
 
+    tokens = text.split()
+
+    if len(tokens) == 1 and expected_slot:
+        candidates.append((tokens[0], expected_slot))
+
     price_patterns = [
         r"\b(cheap|moderate|expensive)\b",
         r"\b(cheap|moderately|moderate|expensive)\s+priced\b",
         r"\b(cheap|moderate|expensive)\s+price\s+range\b",
+        r"\bin\s+(any)\s+price\b",
     ]
     for pattern in price_patterns:
         for match in re.finditer(pattern, text):
             candidates.append((match.group(1), "price"))
 
     area_patterns = [
+        r"\bin\s+(?:the\s+)?([a-z]+)(?:\s+area)?\b",
         r"\b(?:in|on)\s+the\s+([a-z]+)\s+(?:part|area)\b",
         r"\bin\s+(?:the\s+)?(north|south|east|west|centre|center)\b",
         r"\b(north|south|east|west|centre|center)\s+part\s+of\s+town\b",
         r"\b(north|south|east|west|centre|center)\s+area\b",
+        r"\bin\s+(any)\s+area\b",
     ]
     for pattern in area_patterns:
         for match in re.finditer(pattern, text):
@@ -137,16 +146,23 @@ def extract_candidates(text: str) -> list[tuple[str, str]]:
     food_patterns = [
         r"\b(\w+)\s+food\b",
         r"\b(\w+)\s+cuisine\b",
-        r"\b(\w+)\s+restaurant\b",
+        r"\bin\s+(any)\s+food\b",
     ]
     for pattern in food_patterns:
         for match in re.finditer(pattern, text):
             candidates.append((match.group(1), "food"))
 
+    restaurant_pattern = r"\b(\w+)\s+restaurant\b"
+    for match in re.finditer(restaurant_pattern, text):
+        candidate = match.group(1)
+
+        if candidate in ONTOLOGY["food"]:
+            candidates.append((candidate, "food"))
+
     return candidates
 
 
-def extract_by_semantic(candidate: str, slot: str, threshold: float = 0.7) -> Optional[SlotResult]:
+def extract_by_semantic(candidate: str, slot: str, threshold: float = 0.6) -> Optional[SlotResult]:
     """
     Fallback to recover a slot value using semantic similarity when keyword matching does not work.
     The candidate is compared against the ontology values for the specified slot using DistilBERT embeddings.
@@ -174,7 +190,8 @@ def extract_by_semantic(candidate: str, slot: str, threshold: float = 0.7) -> Op
 def extract_slots(
     text: str,
     fallback: str = "levenshtein",
-    semantic_threshold: float = 0.7,
+    semantic_threshold: float = 0.6,
+    expected_slot: Optional[str] = None,
 ) -> list[SlotResult]:
     """
     Extract all slots from a user utterance.
@@ -190,12 +207,33 @@ def extract_slots(
     if keyword_results:
         results.extend(keyword_results)
 
-    candidates = extract_candidates(text)
+    normalized_text = text.lower().strip()
+
+    wildcards = [
+        ("food", ["any food", "any cuisine"]),
+        ("price", ["any price", "any pricing"]),
+        ("area", ["any area", "anywhere", "any part"]),
+    ]
+
+    for slot, phrases in wildcards:
+        if any(phrase in normalized_text for phrase in phrases):
+            results.append(
+                SlotResult(
+                    slot=slot,
+                    value="any",
+                    method="keyword",
+                    needs_confirmation=False,
+                    original_value="any",
+                )
+            )
+
+    candidates = extract_candidates(text, expected_slot)
+
     for candidate, slot in candidates:
         # Check whether this candidate/slot was already extracted by keyword matching.
         already_found = any(
             slot_result.slot == slot
-            and slot_result.value.lower() == candidate.strip().lower()
+            and (slot_result.value or "").lower() == candidate.strip().lower()
             for slot_result in results
         )
         if already_found:
