@@ -44,7 +44,7 @@ def manage(
             use_bert=use_bert,
         )
 
-        # print(f"prediction: {pred}")
+        print(f"utterance:{utterance}, prediction: {pred}")
 
         # -----------------------------
         # 2. Transition

@@ -14,11 +14,11 @@ logging.set_verbosity_error()
 
 name = "LogisticRegression"
 
+tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
+bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
 
 def encode_bert(texts, batch_size=32, max_length=128):
     all_embeddings = []
-    tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
-    bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased")
     bert_model.eval()
 
     for i in range(0, len(texts), batch_size):

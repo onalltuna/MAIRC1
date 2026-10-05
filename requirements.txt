@@ -5,5 +5,4 @@ transformers
 torch
 numpy
 matplotlib
-re
 levenshtein
