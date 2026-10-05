@@ -23,6 +23,7 @@ def manage(
     # Initial system utterance
     welcome_response = response("welcome")
     state.last_response = welcome_response
+    print(f"\n{welcome_response}")
 
     while state.state != DialogStateName.END:
 
