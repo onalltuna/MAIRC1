@@ -10,11 +10,12 @@ def manage(
     is_grouped,
     use_bert,
     slot_fallback="levenshtein",
+    reasoning_transparency=True,
 ):
 
     config = DialogConfig(
         slot_fallback=slot_fallback,
-        reasoning_transparency=True,
+        reasoning_transparency=reasoning_transparency,
     )
 
     state = DialogState()
