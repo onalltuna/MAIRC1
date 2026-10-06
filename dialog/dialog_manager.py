@@ -3,6 +3,7 @@ from dialog.state import DialogState, DialogConfig, UserInput, DialogStateName
 from dialog.transition import transition
 from dialog.responses import response
 from dialog.tts import speak
+from dialog.logging import start_log, log_user, log_system, end_log
 
 def system_say(text, use_tts):
     print(f"\nS: {text}")
@@ -22,11 +23,12 @@ def manage(
     )
 
     state = DialogState()
-
+    log_file = start_log()
     # Initial system utterance
     welcome_response = response("welcome")
     state.last_response = welcome_response
     system_say(welcome_response,use_tts=tts)
+    log_system(log_file, welcome_response, state=state.state)
 
     while state.state != DialogStateName.END:
 
@@ -53,7 +55,7 @@ def manage(
         # -----------------------------
         # 2. Transition
         # -----------------------------
-
+        log_user(log_file, utterance, dialog_act=pred, state=state.state)
         # print(f"\nprevious_state: {state}")
         state, system_response = transition(
             state,
@@ -70,5 +72,9 @@ def manage(
         # -----------------------------
 
         if system_response:
+            log_system(log_file, system_response, state=state.state)
             system_say(system_response,use_tts=tts)
             # print(f"\n{system_response}")
+
+    if state.state == DialogStateName.END:
+        end_log(log_file)

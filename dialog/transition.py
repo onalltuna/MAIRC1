@@ -65,7 +65,7 @@ def handle_restaurant_confirmation(state, text, config):
     restaurant = state.current_restaurant
 
     if restaurant is None:
-        system_response = response("nomatch")
+        system_response = response("nomatch", food=state.food, area=state.area, pricerange=state.price)
         state.last_response = system_response
         return state, system_response
 
@@ -484,7 +484,7 @@ def handle_lookup(state, config):
 
 def generate_recommendation(restaurant, show_reasoning=True):
     if restaurant is None:
-        return response("nomatch")
+        return response("nomatchfound")
 
     base = response(
         "recommend",
@@ -509,7 +509,7 @@ def handle_restaurant_request(state, text):
     restaurant = state.current_restaurant
 
     if restaurant is None:
-        system_response = response("nomatch")
+        system_response = response("nomatch", food=state.food, area=state.area, pricerange=state.price)
         state.last_response = system_response
         return state, system_response
 
@@ -680,7 +680,7 @@ def handle_no_match(
 
         return state, system_response
 
-    system_response = response("nomatch",config)
+    system_response = response("nomatch", food=state.food, area=state.area, pricerange=state.price)
 
     state.last_response = system_response
 

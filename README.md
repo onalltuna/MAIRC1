@@ -20,7 +20,9 @@ This project implements a restaurant recommendation dialog system in two parts. 
 │   ├── ml_classifier_1.py      # ml1 — MLP (BoW and DistilBERT variants)
 │   └── ml_classifier_2.py      # ml2 — Logistic Regression (BoW and DistilBERT variants)  
 ├── dialog/
+│   ├── logs/                   # Log files for user interactions
 │   ├── dialog_manager.py       # Full terminal-based dialog system (Part 1b)
+│   ├── logging.py
 │   ├── ontology.py
 │   ├── reasoning.py
 │   ├── response_generator.py
@@ -95,7 +97,7 @@ uv pip install -r requirements.txt
 python main.py train --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py test --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py prompt --classifier <name> --grouped <y/n> [--bert <y/n>]
-python main.py dialog --grouped <y/n> [--reasoning-transparency <y/n>] [--bert <y/n>]
+python main.py dialog --grouped <y/n> [--slot-fallback <levenshtein/semantic>] [--reasoning-transparency <y/n>] [--bert <y/n>]
 python main.py heldout --classifier <name> --grouped <y/n> [--bert <y/n>]
 ```
 
@@ -135,6 +137,11 @@ Controls which feature representation is used for the ML classifiers (`ml1` and 
 - `--bert y` — utterances are represented using **frozen pretrained DistilBERT embeddings** instead. Each utterance is encoded into a fixed-size dense vector using DistilBERT as a feature extractor (no fine-tuning), and the classifier is trained/tested on those embeddings.
 
 Note that `--bert` only applies to `ml1` and `ml2` — it has no effect on `rulebased`, since the rule-based classifier does not use a learned feature representation at all.
+
+### `--slot-fallback`
+It is optional to specify fallback method used for slot extraction, default is set to levenshtein.
+- `--slot-fallback levenshtein` Apply levenshtein edit distance to map the user's value to the closest ontology term via edit distance.
+- `--slot-fallback semantic` Apply semantic similarity via DistilBERT embeddings.
 
 ### `--reasoning-transparency`
 
