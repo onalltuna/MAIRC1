@@ -21,7 +21,7 @@ class SlotResult:
     original_value: Optional[str] = None
 
 
-def extract_by_keyword(text: str) -> list[SlotResult]:
+def extract_by_keyword(text: str, exclude_value: Optional[str] = None) -> list[SlotResult]:
     """
     Extract an ontology term from the utterance by keyword matching.
     """
@@ -42,6 +42,8 @@ def extract_by_keyword(text: str) -> list[SlotResult]:
         ))
     else:
         for value in ONTOLOGY["food"]:
+            if exclude_value and value == exclude_value:
+                continue
             if re.search(r"\b" + re.escape(value) + r"\b", text):
                 results.append(SlotResult(
                     slot="food",
@@ -192,6 +194,7 @@ def extract_slots(
     fallback: str = "levenshtein",
     semantic_threshold: float = 0.6,
     expected_slot: Optional[str] = None,
+    exclude_value: Optional[str] = None,
 ) -> list[SlotResult]:
     """
     Extract all slots from a user utterance.

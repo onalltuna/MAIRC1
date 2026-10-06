@@ -34,6 +34,15 @@ NO_PREFERENCE_PHRASES = {
     "it doesn't matter",
 }
 
+FAREWELL_PHRASES = {"bye", "goodbye", "thanks", "thank you", "thankyou"}
+
+
+def is_farewell(normalized_text: str) -> bool:
+    for phrase in FAREWELL_PHRASES:
+        if re.search(r"\b" + re.escape(phrase) + r"\b", normalized_text):
+            return True
+    return False
+
 
 def is_no_preference(normalized_text: str) -> bool:
     # exact match — covers short standalone answers like "any" or "whatever"
@@ -367,14 +376,24 @@ def handle_confirmation(
     # User rejected the suggestion
     # --------------------------------
 
-    elif act in {"deny", "negate"} or text in {
-        "no",
-        "n",
-        "nope",
-        "wrong",
-    }:
+    elif act in {"deny", "negate"} or text in {"no", "n", "nope", "wrong"}:
+        rejected = state.pending_confirmations.pop(0)
 
-        state.pending_confirmations.pop(0)
+        # the rejection may carry a corrected preference in the same
+        # utterance (e.g. "no, not Italian, I want Chinese") — try to
+        # recover it rather than discarding the text entirely
+        missing_slot = get_missing_slot(state)
+        extracted = extract_slots(
+            text,
+            fallback=config.slot_fallback,
+            expected_slot=missing_slot,
+            exclude_value=rejected.value,   # see note below
+        )
+        for result in extracted:
+            if result.slot == rejected.slot and result.value != rejected.value:
+                setattr(state, result.slot, result.value)
+                reset_restaurant_results(state)
+                break
 
     # --------------------------------
     # Unknown confirmation response
@@ -431,7 +450,6 @@ def handle_confirmation(
     state.last_response = system_response
 
     return state, system_response
-
 
 
 def handle_lookup(state, config):
@@ -561,7 +579,7 @@ def handle_recommendation(state, text, act, config):
     if act == "request":
         return handle_restaurant_request(state, text)
 
-    if act in {"bye", "thankyou"}:
+    if act in {"bye", "thankyou"} or is_farewell(text.lower().strip()):
         state.state = DialogStateName.END
         system_response = response("goodbye")
         state.last_response = system_response
@@ -597,6 +615,9 @@ def handle_alternative(state, act, config):
     system_response = response(
         "alternative",
         restaurantname=alternative["restaurantname"],
+        food = alternative["food"],
+        area = alternative["area"],
+        pricerange = alternative["pricerange"]
     )
 
     state.last_response = system_response
@@ -750,19 +771,10 @@ def handle_offer_preference_change(
     # End conversation
     # --------------------------------
 
-    if act in {"bye", "thankyou"} or text in {
-        "bye",
-        "goodbye",
-        "thanks",
-        "thank you",
-        "thankyou",
-    }:
+    if act in {"bye", "thankyou"} or is_farewell(text.lower().strip()):
         state.state = DialogStateName.END
-
         system_response = response("goodbye")
-
         state.last_response = system_response
-
         return state, system_response
 
     # --------------------------------
@@ -795,20 +807,10 @@ def transition(
     # ------------------------------------
     # Global transitions
     # ------------------------------------
-    if act in {"bye", "thankyou"} or text in {
-            "bye",
-            "goodbye",
-            "thanks",
-            "thank you",
-            "thankyou",
-        }: # TODO: check with TA if we call use text fallback, because bye is not classified correctly
-
+    if act in {"bye", "thankyou"} or is_farewell(text.lower().strip()):
         state.state = DialogStateName.END
-
         system_response = response("goodbye")
-
         state.last_response = system_response
-
         return state, system_response
 
     if act == "restart":

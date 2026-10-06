@@ -5,7 +5,7 @@ from dialog.responses import response
 from dialog.tts import speak
 
 def system_say(text, use_tts):
-    print(f"\n{text}")
+    print(f"\nS: {text}")
     if use_tts:
         speak(text)
 def manage(

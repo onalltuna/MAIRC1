@@ -50,7 +50,7 @@ RESPONSES = {
         "and is in the {pricerange} price range.",
 
     "alternative":
-        "How about {restaurantname}?",
+        "How about {restaurantname}? It serves {food} food, is in the {area} area, and is in the {pricerange} price range.",
 
     "noalternative":
         "Sorry, there are no more restaurants matching your preferences.",
@@ -72,6 +72,9 @@ RESPONSES = {
     "repeat": "Could please be more elaborate on that."
 }
 
-
 def response(key, **kwargs):
-    return RESPONSES[key].format(**kwargs)
+    if "restaurantname" in kwargs and kwargs["restaurantname"]:
+        kwargs["restaurantname"] = kwargs["restaurantname"].capitalize()
+
+    template = RESPONSES[key]
+    return template.format(**kwargs)
