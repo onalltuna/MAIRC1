@@ -186,7 +186,7 @@ def test(isHeldOut, isGrouped, use_bert):
                 # print(f"words: {words}")
                 # print(f"combos: {combos}")
                 if keyword in combos:
-            # if any(keyword in words for keyword in keywords):
+                    # if any(keyword in words for keyword in keywords):
                     df.loc[index, "pred"] = act
                     break
 
@@ -198,7 +198,8 @@ def test(isHeldOut, isGrouped, use_bert):
 
     evaluate(df=df,general_file_name=eval_file_name,conf_matrix_name=conf_matrix_file_name)
 
-def predict(utterance):
+
+def predict(utterance, isGrouped, use_bert):
     """Predict a dialog act for a single utterance using keyword-based rules."""
     utterance = utterance.lower()
     words = utterance.split()

@@ -3,7 +3,9 @@ import torch
 from transformers import DistilBertModel, DistilBertTokenizerFast
 from transformers.utils import logging
 
+
 logging.set_verbosity_error()
+logging.disable_progress_bar()
 
 _tokenizer = None
 _model = None

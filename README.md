@@ -108,13 +108,13 @@ Runs the training process for the selected classifier.
 Runs the testing process for the selected classifier.
 
 #### `prompt`
-Starts a prompt-based classification interface: the user enters an utterance and the system prints the predicted dialog act using the selected classifier. This repeats until the user exits by typing `/exit` or pressing Ctrl+C.
+Starts a prompt-based classification interface: the user enters an utterance and the system prints the predicted dialog act using the selected classifier. This repeats until the user exits by typing `/exit` or pressing Ctrl+C. Users can switch between classiiers by typing  `/switch ml1` or  `/switch ml2 ` or  `/switch rulebased `
 
 #### `dialog`
 Starts the full restaurant dialog system: a working, terminal-based dialog manager that holds an actual conversation with the user and recommends a restaurant. User can exit the dialog system by typing /exit or pressing Ctrl+C. Users can also enable additional accessibility features such as reasoning transparency and Text to Speech that are described below.
 
 #### `heldout`
-Loads the held-out test set and applies testing on that file. For this command to be usable, the held-out data file needs to be stored at `data/raw/dialog_acts_test.dat`.
+Loads the held-out test set and applies testing on that file. For this command to be usable, the held-out data file needs to be stored at `data/raw/dialog_acts_test.dat`. When the process is complete the visuals representing the results of the testing can be found under `results` folder.
 
 #### Allowed classifier names
 

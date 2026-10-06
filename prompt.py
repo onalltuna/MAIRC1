@@ -18,23 +18,45 @@ def manage(classifier_name, is_grouped, use_bert):
         try:
             utterance = input("> ").strip().lower()
         except (KeyboardInterrupt, EOFError):
-            print("\nExiting dialog manager")
+            print("\nExiting prompt manager")
             break
 
         if not utterance:
             continue
 
         if utterance == "/exit":
-            print("Exiting dialog manager")
+            print("\nExiting prompt manager")
             break
 
-        try:
-            if classifier_name == "rulebased":
-                pred = rb.predict(utterance)
-            elif classifier_name == "ml1":
-                pred = ml1.predict(utterance=utterance, isGrouped=is_grouped, use_bert=use_bert)
+        if utterance == "/switch ml1":
+            if classifier == ml1:
+                print("\nMLP classifier is already selected")
+                continue
             else:
-                pred = ml2.predict(utterance=utterance, isGrouped=is_grouped, use_bert=use_bert)
+                print("\nPrompt manager has switched to MLP!")
+                classifier = ml1
+                continue
+        if utterance == "/switch ml2":
+            if classifier == ml2:
+                print("\nLogistic Regression classifier is already selected")
+                continue
+            else:
+                print("\nPrompt manager has switched to Logistic Regression!")
+                classifier = ml2
+                continue
+        if utterance == "/switch rulebased":
+            if classifier == rb:
+                print("\nRulebased classifier is already selected")
+                continue
+            else:
+                print("\nPrompt manager has switched to Rulebased!")
+                classifier = ml2
+                continue
+
+        try:
+            pred = classifier.predict(
+                utterance=utterance, isGrouped=is_grouped, use_bert=use_bert
+            )
         except FileNotFoundError as e:
             print(f"\nError: could not find a required model file: '{e.filename}'.")
             print("Make sure you've trained this classifier configuration first, e.g.:")
