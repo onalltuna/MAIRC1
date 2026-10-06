@@ -14,31 +14,46 @@ classifiers = {
 
 def train_classifier(classifier_name, isGrouped, use_bert):
     classifier = classifiers[classifier_name]
-    print(f"\nYou are training the {classifier.name} model with the following settings: grouped={isGrouped}, bert={use_bert}\n")
+    print(
+        f"\nYou are training the {classifier.name} model with the following settings: grouped={isGrouped}, bert={use_bert}\n"
+    )
     try:
         classifier.train(isGrouped=isGrouped, use_bert=use_bert)
     except FileNotFoundError as e:
-        print(f"Error: could not find a required file while training '{classifier_name}': {e.filename}")
-        print("Make sure you've run data_preprocess.py to generate the processed data files first:")
+        print(
+            f"Error: could not find a required file while training '{classifier_name}': {e.filename}"
+        )
+        print(
+            "Make sure you've run data_preprocess.py to generate the processed data files first:"
+        )
         print("  python data_preprocess.py")
         sys.exit(0)
 
 
-
 def test_classifier(classifier_name, isHeldOut, isGrouped, use_bert):
     classifier = classifiers[classifier_name]
-    print(f"\nYou are testing the {classifier.name} model with the following settings: grouped={isGrouped}, bert={use_bert}, held-out:{isHeldOut}\n")
+    print(
+        f"\nYou are testing the {classifier.name} model with the following settings: grouped={isGrouped}, bert={use_bert}, held-out:{isHeldOut}\n"
+    )
     try:
         classifier.test(isHeldOut=isHeldOut, isGrouped=isGrouped, use_bert=use_bert)
     except FileNotFoundError as e:
-        print(f"Error: could not find the required file while testing '{classifier_name}': {e.filename}")
+        print(
+            f"Error: could not find the required file while testing '{classifier_name}': {e.filename}"
+        )
         if isHeldOut:
-            print("\nMake sure the held-out file exists at data/raw/dialog_acts_test.dat")
+            print(
+                "\nMake sure the held-out file exists at data/raw/dialog_acts_test.dat"
+            )
         else:
-            print("\nMake sure you've run the preprocessing script and trained this classifier first, e.g.:")
+            print(
+                "\nMake sure you've run the preprocessing script and trained this classifier first, e.g.:"
+            )
             print("  python data_preprocess.py")
-            print(f"  python main.py train --classifier {classifier_name} --grouped {'y' if isGrouped else 'n'}"
-                  f"{' --bert y' if use_bert else ''}")
+            print(
+                f"  python main.py train --classifier {classifier_name} --grouped {'y' if isGrouped else 'n'}"
+                f"{' --bert y' if use_bert else ''}"
+            )
         sys.exit(0)
 
 
@@ -48,15 +63,20 @@ def activate_prompt_with_classifier(classifier_name, is_grouped, use_bert):
     except FileNotFoundError as e:
         print(f"Error: could not find a required model file: '{e.filename}'.")
         print("Make sure you've trained this classifier configuration first, e.g.:")
-        print(f"  python main.py train --classifier {classifier_name} --grouped {'y' if is_grouped else 'n'}"
-              f"{' --bert y' if use_bert else ''}")
+        print(
+            f"  python main.py train --classifier {classifier_name} --grouped {'y' if is_grouped else 'n'}"
+            f"{' --bert y' if use_bert else ''}"
+        )
         sys.exit(1)
 
 
-def activate_dialog_with_classifier(is_grouped, use_bert, slot_fallback, reasoning_transparency):
+def activate_dialog_with_classifier(
+    is_grouped, use_bert, slot_fallback, reasoning_transparency, tts
+):
     try:
         import dialog.dialog_manager as dm
-        dm.manage(is_grouped, use_bert, slot_fallback, reasoning_transparency)
+
+        dm.manage(is_grouped, use_bert, slot_fallback, reasoning_transparency, tts)
     except FileNotFoundError as e:
         print(f"Error: could not find a required model file: '{e.filename}'.")
         print("Make sure you've trained this classifier configuration first.")
@@ -77,7 +97,6 @@ def main():
     train_parser.add_argument("--grouped", choices=["y", "n"], required=True)
     train_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
 
-
     test_parser = subparsers.add_parser("test", help="Test a classifier")
     test_parser.add_argument(
         "--classifier",
@@ -87,38 +106,55 @@ def main():
     test_parser.add_argument("--grouped", choices=["y", "n"], required=True)
     test_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
 
-    prompt_parser = subparsers.add_parser("prompt", help="Start the prompt based classification system")
+    prompt_parser = subparsers.add_parser(
+        "prompt", help="Start the prompt based classification system"
+    )
     prompt_parser.add_argument(
         "--classifier",
         choices=classifiers.keys(),
         required=True,
     )
     prompt_parser.add_argument("--grouped", choices=["y", "n"], required=True)
-    prompt_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
+    prompt_parser.add_argument(
+        "--bert", choices=["y", "n"], required=False, default="n"
+    )
 
-
-    dialog_parser = subparsers.add_parser("dialog", help="Start the restaurant dialog system")
+    dialog_parser = subparsers.add_parser(
+        "dialog", help="Start the restaurant dialog system"
+    )
     # dialog_parser.add_argument("--classifier",choices=classifiers.keys(),required=True)
     dialog_parser.add_argument("--grouped", choices=["y", "n"], required=True)
-    dialog_parser.add_argument("--bert", choices=["y", "n"], required=False, default="n")
+    dialog_parser.add_argument(
+        "--bert", choices=["y", "n"], required=False, default="n"
+    )
     dialog_parser.add_argument(
         "--slot-fallback",
         choices=["levenshtein", "semantic"],
         default="levenshtein",
-        help="Slot extraction fallback method"
+        help="Slot extraction fallback method",
     )
 
     dialog_parser.add_argument(
         "--reasoning-transparency",
-        choices=["y","n"],
-        default= "y",
-        help="Show or hide the reasoning behind the system's responses"
+        choices=["y", "n"],
+        default="y",
+        help="Show or hide the reasoning behind the system's responses",
+    )
+    dialog_parser.add_argument(
+        "--tts",
+        choices=["y", "n"],
+        default="n",
+        help="Speak the system's utterances aloud",
     )
 
     heldout_parser = subparsers.add_parser("heldout", help="Held-out test set")
-    heldout_parser.add_argument("--classifier", choices=classifiers.keys(), required=True)
-    heldout_parser.add_argument("--grouped",choices=["y", "n"], required=True)
-    heldout_parser.add_argument("--bert",choices=["y", "n"], required=False, default="n")
+    heldout_parser.add_argument(
+        "--classifier", choices=classifiers.keys(), required=True
+    )
+    heldout_parser.add_argument("--grouped", choices=["y", "n"], required=True)
+    heldout_parser.add_argument(
+        "--bert", choices=["y", "n"], required=False, default="n"
+    )
 
     args = parser.parse_args()
     is_grouped = args.grouped == "y"
@@ -127,13 +163,19 @@ def main():
     if args.command == "train":
         train_classifier(args.classifier, is_grouped, use_bert)
     elif args.command == "test":
-        test_classifier(args.classifier, isHeldOut=False, isGrouped=is_grouped, use_bert=use_bert)
+        test_classifier(
+            args.classifier, isHeldOut=False, isGrouped=is_grouped, use_bert=use_bert
+        )
     elif args.command == "prompt":
         activate_prompt_with_classifier(args.classifier, is_grouped, use_bert)
     elif args.command == "dialog":
-        activate_dialog_with_classifier(is_grouped, use_bert, args.slot_fallback, args.reasoning_transparency == "y")
+        activate_dialog_with_classifier(
+            is_grouped, use_bert, args.slot_fallback, args.reasoning_transparency == "y", args.tts == "y"
+        )
     elif args.command == "heldout":
-        test_classifier(args.classifier, isHeldOut=True, isGrouped=is_grouped, use_bert=use_bert)
+        test_classifier(
+            args.classifier, isHeldOut=True, isGrouped=is_grouped, use_bert=use_bert
+        )
 
 
 if __name__ == "__main__":

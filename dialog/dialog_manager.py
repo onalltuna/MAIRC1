@@ -2,13 +2,18 @@ import classifiers.ml_classifier_1 as ml1
 from dialog.state import DialogState, DialogConfig, UserInput, DialogStateName
 from dialog.transition import transition
 from dialog.responses import response
+from dialog.tts import speak
 
-
+def system_say(text, use_tts):
+    print(f"\n{text}")
+    if use_tts:
+        speak(text)
 def manage(
     is_grouped,
     use_bert,
     slot_fallback="levenshtein",
     reasoning_transparency=True,
+    tts = False
 ):
 
     config = DialogConfig(
@@ -21,7 +26,7 @@ def manage(
     # Initial system utterance
     welcome_response = response("welcome")
     state.last_response = welcome_response
-    print(f"\n{welcome_response}")
+    system_say(welcome_response,use_tts=tts)
 
     while state.state != DialogStateName.END:
 
@@ -65,4 +70,5 @@ def manage(
         # -----------------------------
 
         if system_response:
-            print(f"\n{system_response}")
+            system_say(system_response,use_tts=tts)
+            # print(f"\n{system_response}")
