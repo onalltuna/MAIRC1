@@ -63,7 +63,13 @@ def create_split_grouped(df):
     train_groups = pd.concat([train_groups, rare_groups], ignore_index=True)
     train_utterances = set(train_groups["utterance"])
     test_utterances = set(test_groups["utterance"])
+    total_groups = len(train_utterances) + len(test_utterances)
 
+    print(f"Grouped train unique utterances: {len(train_utterances)}")
+    print(f"Grouped test unique utterances: {len(test_utterances)}")
+    print(f"Grouped train percentage: {len(train_utterances) / total_groups:.2%}")
+    print(f"Grouped test percentage: {len(test_utterances) / total_groups:.2%}")
+    
     # Expand the selected utterance groups back to the original dataset to create the final train and test splits.
     train_df = df[df["utterance"].isin(train_utterances)]
     test_df = df[df["utterance"].isin(test_utterances)]
