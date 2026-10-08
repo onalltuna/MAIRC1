@@ -142,8 +142,12 @@ def handle_additional_requirements(state, text, act, config):
 
 
 def handle_welcome(state, text, act, config):
-    if act == "inform":
-        return handle_preferences(state, text, act, config)
+    #issue was that if you say 'hello, i want x', it will aks again for your prefertence even if you just gave the preference. 
+    # hope this will fix it by first checking if any slots can be filled, and then go to the inform act
+    results = extract_slots(text, fallback=config.slot_fallback,
+                            expected_slot=get_missing_slot(state))
+    if results:
+        return handle_preferences(state, text, "inform", config)
 
     state.state = DialogStateName.COLLECT_PREFERENCES
     system_response = ask_for_missing_slot(state)
