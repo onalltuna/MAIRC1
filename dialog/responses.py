@@ -69,7 +69,18 @@ RESPONSES = {
         "Goodbye!",
     "ended":
         "The conversation has ended.",
-    "repeat": "Could please be more elaborate on that."
+    "repeat": "Could please be more elaborate on that.",
+
+
+
+
+
+    "nothing_to_change": "Okay, I'll keep your preferences. Would you like the address, phone number, or postcode of {restaurantname}?",
+    "anything_else": "Okay. Is there anything else I can help you with?",
+    "rejected_ack": "Okay, I won't suggest {restaurantname} again.",
+    "confirm_unclear": "Sorry, I didn't understand. Could you rephrase?",
+    "fallback": "Sorry, I didn't catch that. Could you rephrase?"
+
 }
 
 def response(key, **kwargs):
