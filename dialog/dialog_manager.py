@@ -32,7 +32,11 @@ def manage(
 
     while state.state != DialogStateName.END:
 
-        utterance = input("> ").strip()
+        try:
+            utterance = input("> ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting dialog manager")
+            break
 
         if not utterance:
             continue
@@ -76,5 +80,4 @@ def manage(
             system_say(system_response,use_tts=tts)
             # print(f"\n{system_response}")
 
-    if state.state == DialogStateName.END:
-        end_log(log_file)
+    end_log(log_file)

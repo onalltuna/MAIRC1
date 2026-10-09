@@ -12,42 +12,55 @@ This project implements a restaurant recommendation dialog system in two parts. 
 
 ```
 .
-├── main.py                     # CLI entry point (train / test / prompt / dialog / heldout)
-├── data_preprocess.py          # Generates processed train/test splits from raw data
+├── main.py                         # CLI entry point (train / test / prompt / dialog / heldout)
+├── data_preprocess.py              # Generates processed train/test splits from raw data
+├── prompt.py                       # Prompt-based single-utterance classification interface
+├── evaluate.py                     # Computes metrics and saves result plots to results/
+├── requirements.txt
 ├── classifiers/
-│   ├── bert_encoder.py
-│   ├── rule_based.py           # Keyword-matching baseline
-│   ├── ml_classifier_1.py      # ml1 — MLP (BoW and DistilBERT variants)
-│   └── ml_classifier_2.py      # ml2 — Logistic Regression (BoW and DistilBERT variants)  
-├── dialog/
-│   ├── logs/                   # Log files for user interactions
-│   ├── dialog_manager.py       # Full terminal-based dialog system (Part 1b)
-│   ├── logging.py
-│   ├── ontology.py
-│   ├── reasoning.py
-│   ├── response_generator.py
-│   ├── responses.py
-│   ├── restaurant_info_extenden.csv
-│   ├── restaurant_lookup.py
-│   ├── semantic_similarity.py
-│   ├── slot_extractor.py
-│   ├── state.py
-│   ├── transition.py
-├── prompt.py                   # Prompt-based single-utterance classification interface
-├── evaluate.py                
+│   ├── bert_encoder.py             # DistilBERT sentence embeddings
+│   ├── rule_based.py               # Keyword-matching baseline
+│   ├── ml_classifier_1.py          # ml1 — MLP (BoW and DistilBERT variants)
+│   ├── ml_classifier_2.py          # ml2 — Logistic Regression (BoW and DistilBERT variants)
+│   └── *.joblib                    # Trained models and vectorizers (all 8 variants included)
+├── dialog/                         # Part 2: dialog system
+│   ├── dialog_manager.py           # Main dialog loop: classify, transition, respond
+│   ├── state.py                    # Dialog state, state names and configuration
+│   ├── transition.py               # State transition function
+│   ├── slot_extractor.py           # Slot extraction (keywords + Levenshtein / semantic fallback)
+│   ├── semantic_similarity.py      # DistilBERT-based semantic slot matching
+│   ├── ontology.py                 # Known food, price and area values
+│   ├── restaurant_lookup.py        # Finds restaurants matching the preferences
+│   ├── reasoning.py                # Inference rules and contradiction resolution
+│   ├── responses.py                # System response templates
+│   ├── response_generator.py       # Not used by the dialog system
+│   ├── tts.py                      # Text to Speech
+│   ├── logging.py                  # Writes conversation logs
+│   ├── restaurant_info.csv         # Original restaurant data
+│   ├── restaurant_info_extended.csv  # Restaurant data with extra properties (used by the system)
+│   ├── bugs.txt                    # Known bugs
+│   └── logs/                       # Log file of every dialog
 ├── data/
-│   ├── raw/                    # Raw dataset + held-out test file
-│   └── processed/              # Original and grouped train/test splits
+│   ├── raw/
+│   │   ├── dialog_acts.dat         # DSTC 2 dialog acts dataset
+│   │   ├── dialog_acts_test.dat    # Held-out test set
+│   │   ├── all_dialogs.txt         # Full example dialogs
+│   │   ├── reference_dialogs.txt   # 20 reference dialogs for the dialog system
+│   │   └── restaurant_info.csv
+│   └── processed/                  # Original and grouped train/test splits
+├── docs/
+│   └── state_diagram_updated.*     # Updated state transition diagram (.drawio, .svg, .png)
+└── results/                        # Plots produced by test and heldout
 ```
 
 
 
 ## Data Preprocessing
 
-The raw DSTC 2 dialog acts data is stored in 'data/raw/dialog_acts.dat'. Each line contains a dialog acts label followed by the corresponding user utterance. The preprocessing script reads this file line by line,seperates the label from the utterance and converts them both to lowercase.
+The raw DSTC 2 dialog acts data is stored in `data/raw/dialog_acts.dat`. Each line contains a dialog act label followed by the corresponding user utterance. The preprocessing script reads this file line by line, separates the label from the utterance and converts them both to lowercase.
 ### Splitting strategy
 
-Many utterances in the dataset are not uniwue. With a normal random split, the same utterance may appear in both training and test data, which can cause data leakage. 
+Many utterances in the dataset are not unique. With a normal random split, the same utterance may appear in both training and test data, which can cause data leakage. 
 Therefore, we create two split variants:
 
 - **Original split** (`--grouped n`) - a stratified random 85/15 train-test split over all utterance instances. Duplicate utterances may occur in both train and test.
@@ -97,11 +110,11 @@ uv pip install -r requirements.txt
 python main.py train --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py test --classifier <name> --grouped <y/n> [--bert <y/n>]
 python main.py prompt --classifier <name> --grouped <y/n> [--bert <y/n>]
-python main.py dialog --grouped <y/n> [--slot-fallback <levenshtein/semantic>] [--reasoning-transparency <y/n>] [--bert <y/n>]
+python main.py dialog [--slot-fallback <levenshtein/semantic>] [--reasoning-transparency <y/n>] [--tts <y/n>]
 python main.py heldout --classifier <name> --grouped <y/n> [--bert <y/n>]
 ```
 
-> **Note:** `train` must be run for a given `--classifier`/`--grouped`/`--bert` combination before `test`, `prompt`, `dialog`, or `heldout` can be used with that same combination — those commands load the model file that `train` produces. Running them first will print a clear error telling you which `train` command to run.
+> **Note:** `train` must be run for a given `--classifier`/`--grouped`/`--bert` combination before `test`, `prompt`, or `heldout` can be used with that same combination, and `dialog` needs `python main.py train --classifier ml1 --grouped y --bert y` — those commands load the model file that `train` produces. Running them first will print a clear error telling you which `train` command to run.
 
 #### `train`
 Runs the training process for the selected classifier.
@@ -110,10 +123,12 @@ Runs the training process for the selected classifier.
 Runs the testing process for the selected classifier.
 
 #### `prompt`
-Starts a prompt-based classification interface: the user enters an utterance and the system prints the predicted dialog act using the selected classifier. This repeats until the user exits by typing `/exit` or pressing Ctrl+C. Users can switch between classiiers by typing  `/switch ml1` or  `/switch ml2 ` or  `/switch rulebased `
+Starts a prompt-based classification interface: the user enters an utterance and the system prints the predicted dialog act using the selected classifier. This repeats until the user exits by typing `/exit` or pressing Ctrl+C. Users can switch between classifiers by typing `/switch ml1`, `/switch ml2` or `/switch rulebased`.
 
 #### `dialog`
 Starts the full restaurant dialog system: a working, terminal-based dialog manager that holds an actual conversation with the user and recommends a restaurant. User can exit the dialog system by typing /exit or pressing Ctrl+C. Users can also enable additional accessibility features such as reasoning transparency and Text to Speech that are described below.
+
+The dialog system always classifies user utterances with the **MLP classifier (`ml1`) trained on the grouped split with DistilBERT embeddings**. This configuration is fixed, so `dialog` does not take `--classifier`, `--grouped`, or `--bert` options.
 
 #### `heldout`
 Loads the held-out test set and applies testing on that file. For this command to be usable, the held-out data file needs to be stored at `data/raw/dialog_acts_test.dat`. When the process is complete the visuals representing the results of the testing can be found under `results` folder.
@@ -136,12 +151,12 @@ Controls which feature representation is used for the ML classifiers (`ml1` and 
 - `--bert n` (or omitting the flag) — utterances are represented using **bag-of-words (BoW)**. This is the default behavior: the classifier is trained/tested on sparse word-count vectors built from the training vocabulary.
 - `--bert y` — utterances are represented using **frozen pretrained DistilBERT embeddings** instead. Each utterance is encoded into a fixed-size dense vector using DistilBERT as a feature extractor (no fine-tuning), and the classifier is trained/tested on those embeddings.
 
-Note that `--bert` only applies to `ml1` and `ml2` — it has no effect on `rulebased`, since the rule-based classifier does not use a learned feature representation at all.
+Note that `--bert` only applies to `ml1` and `ml2` — it has no effect on `rulebased`, since the rule-based classifier does not use a learned feature representation at all. It is also not an option for `dialog`, which always uses DistilBERT embeddings.
 
 ### `--slot-fallback`
-It is optional to specify fallback method used for slot extraction, default is set to levenshtein.
-- `--slot-fallback levenshtein` Apply levenshtein edit distance to map the user's value to the closest ontology term via edit distance.
-- `--slot-fallback semantic` Apply semantic similarity via DistilBERT embeddings.
+Optionally sets the fallback method used for slot extraction when a value is not recognized exactly. The default is `levenshtein`.
+- `--slot-fallback levenshtein` — maps the user's value to the closest ontology term by Levenshtein edit distance.
+- `--slot-fallback semantic` — maps the user's value to the most similar ontology term using DistilBERT embeddings.
 
 ### `--reasoning-transparency`
 
@@ -157,7 +172,7 @@ This option implements the configurable feature for part 2. The reasoning transp
 Controls whether the Text to Speech is enabled for the dialog system.
 
 - `--tts y` — The system reads the system messages out loud so the user can hear the system messages.
-- `--tts n` — Text to Speech is not enabled and the system messages are only printed on the terminal.
+- `--tts n` — Text to Speech is not enabled and the system messages are only printed on the terminal. This is the default.
 
 ### Example: running BoW + a classifier
 
@@ -178,7 +193,7 @@ python main.py test --classifier ml2 --grouped y
 python main.py train --classifier rulebased --grouped n
 python main.py test --classifier ml1 --grouped y --bert y
 python main.py prompt --classifier ml1 --grouped y --bert y
-python main.py dialog --grouped y --bert n --reasoning-transparency y --tts y
-python main.py dialog --grouped y --bert n --reasoning-transparency n
+python main.py dialog --reasoning-transparency y --tts y
+python main.py dialog --reasoning-transparency n
 python main.py heldout --classifier rulebased --grouped n --bert n
 ```

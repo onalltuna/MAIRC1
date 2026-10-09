@@ -50,7 +50,7 @@ def manage(classifier_name, is_grouped, use_bert):
                 continue
             else:
                 print("\nPrompt manager has switched to Rulebased!")
-                classifier = ml2
+                classifier = rb
                 continue
 
         try:

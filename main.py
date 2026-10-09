@@ -70,16 +70,21 @@ def activate_prompt_with_classifier(classifier_name, is_grouped, use_bert):
         sys.exit(1)
 
 
-def activate_dialog_with_classifier(
-    is_grouped, use_bert, slot_fallback, reasoning_transparency, tts
-):
+# The dialog system always uses the MLP (ml1) trained on the grouped split
+# with DistilBERT embeddings.
+DIALOG_IS_GROUPED = True
+DIALOG_USE_BERT = True
+
+
+def activate_dialog_with_classifier(slot_fallback, reasoning_transparency, tts):
     try:
         import dialog.dialog_manager as dm
 
-        dm.manage(is_grouped, use_bert, slot_fallback, reasoning_transparency, tts)
+        dm.manage(DIALOG_IS_GROUPED, DIALOG_USE_BERT, slot_fallback, reasoning_transparency, tts)
     except FileNotFoundError as e:
         print(f"Error: could not find a required model file: '{e.filename}'.")
-        print("Make sure you've trained this classifier configuration first.")
+        print("The dialog system uses the ml1 classifier (grouped split, DistilBERT). Train it first with:")
+        print("  python main.py train --classifier ml1 --grouped y --bert y")
         sys.exit(1)
 
 
@@ -122,11 +127,6 @@ def main():
     dialog_parser = subparsers.add_parser(
         "dialog", help="Start the restaurant dialog system"
     )
-    # dialog_parser.add_argument("--classifier",choices=classifiers.keys(),required=True)
-    dialog_parser.add_argument("--grouped", choices=["y", "n"], required=True)
-    dialog_parser.add_argument(
-        "--bert", choices=["y", "n"], required=False, default="n"
-    )
     dialog_parser.add_argument(
         "--slot-fallback",
         choices=["levenshtein", "semantic"],
@@ -157,8 +157,8 @@ def main():
     )
 
     args = parser.parse_args()
-    is_grouped = args.grouped == "y"
-    use_bert = args.bert == "y"
+    is_grouped = getattr(args, "grouped", None) == "y"
+    use_bert = getattr(args, "bert", None) == "y"
 
     if args.command == "train":
         train_classifier(args.classifier, is_grouped, use_bert)
@@ -170,7 +170,7 @@ def main():
         activate_prompt_with_classifier(args.classifier, is_grouped, use_bert)
     elif args.command == "dialog":
         activate_dialog_with_classifier(
-            is_grouped, use_bert, args.slot_fallback, args.reasoning_transparency == "y", args.tts == "y"
+            args.slot_fallback, args.reasoning_transparency == "y", args.tts == "y"
         )
     elif args.command == "heldout":
         test_classifier(
