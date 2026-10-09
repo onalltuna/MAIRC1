@@ -6,7 +6,6 @@ from typing import Optional
 class DialogConfig:
     slot_fallback: str = "levenshtein"
     reasoning_transparency: bool = True
-    reasoning_strategy: str = "positive_wins"
 
 class DialogStateName:
     WELCOME = "WELCOME"
@@ -45,6 +44,9 @@ class DialogState:
 
     # Additional reasoning requirement
     additional_requirement: Optional[tuple] = None
+
+    # Whether the additional requirement question has been asked already
+    additional_requirement_asked: bool = False
 
     # Last system response, useful for repeat
     last_response: Optional[str] = None

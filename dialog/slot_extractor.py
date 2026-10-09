@@ -129,9 +129,12 @@ def extract_candidates(text: str, expected_slot: Optional[str] = None) -> list[t
         r"\b(cheap|moderate|expensive)\s+price\s+range\b",
         r"\bin\s+(any)\s+price\b",
     ]
+    # adverb forms like "moderately priced" are exact matches, not typos
+    price_synonyms = {"moderately": "moderate"}
+
     for pattern in price_patterns:
         for match in re.finditer(pattern, text):
-            candidates.append((match.group(1), "price"))
+            candidates.append((price_synonyms.get(match.group(1), match.group(1)), "price"))
 
     area_patterns = [
         r"\bin\s+(?:the\s+)?([a-z]+)(?:\s+area)?\b",

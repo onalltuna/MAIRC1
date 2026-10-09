@@ -64,6 +64,22 @@ ADDITIONAL_REQUIREMENT_KEYWORDS = {
 }
 NEGATION_WORDS = {"not", "no", "don't", "dont"}
 
+# how a derived property is phrased to the user, e.g. "It is romantic because ..."
+PROPERTY_PHRASES = {
+    ("touristic", True): "is touristic",
+    ("touristic", False): "is not touristic",
+    ("assigned_seats", True): "has assigned seats",
+    ("assigned_seats", False): "does not have assigned seats",
+    ("children", True): "is suitable for children",
+    ("children", False): "is not suitable for children",
+    ("romantic", True): "is romantic",
+    ("romantic", False): "is not romantic",
+}
+
+
+def describe_property(prop: str, value: bool) -> str:
+    return PROPERTY_PHRASES.get((prop, value), f"is {'' if value else 'not '}{prop.replace('_', ' ')}")
+
 def rule_fires(rule: Rule, restaurant: dict) -> bool:
     return all(restaurant.get(attr) == val for attr, val in rule.antecedent)
 
@@ -77,7 +93,7 @@ def apply_rules(restaurant: dict, rules=RULES) -> dict[str, list[Rule]]:
     return fired
 
 
-def resolve_property(fired_rules, strategy="positive_wins"):
+def resolve_property(fired_rules):
     if not fired_rules:
         return None, None, None  # value, explanation, contradiction_note
 
@@ -85,31 +101,19 @@ def resolve_property(fired_rules, strategy="positive_wins"):
     false_rules = [r for r in fired_rules if r.value is False]
 
     if true_rules and false_rules:
-        # genuine contradiction — both a True and a False rule fired
-        if strategy == "positive_wins":
-            chosen, losing = true_rules[0], false_rules[0]
-        elif strategy == "negative_wins":
-            chosen, losing = false_rules[0], true_rules[0]
-        elif strategy == "majority":
-            if len(true_rules) > len(false_rules):
-                chosen, losing = true_rules[0], false_rules[0]
-            elif len(false_rules) > len(true_rules):
-                chosen, losing = false_rules[0], true_rules[0]
-            else:
-                return None, None, "conflicting evidence, no majority"
-        else:
-            raise ValueError(f"Unknown strategy: {strategy}")
-
+        # genuine contradiction — both a True and a False rule fired,
+        # resolved by letting the positive rule win
+        chosen, losing = true_rules[0], false_rules[0]
         return chosen.value, chosen.description, losing.description
 
     chosen = true_rules[0] if true_rules else false_rules[0]
     return chosen.value, chosen.description, None  # no contradiction, nothing to disclose
 
 
-def derive_properties(restaurant, strategy="positive_wins"):
+def derive_properties(restaurant):
     derived = {}
     for prop, fired_rules in apply_rules(restaurant).items():
-        value, explanation, contradiction_note = resolve_property(fired_rules, strategy=strategy)
+        value, explanation, contradiction_note = resolve_property(fired_rules)
         if value is not None:
             derived[prop] = (value, explanation, contradiction_note)
     return derived
