@@ -1,6 +1,6 @@
 import pandas as pd
 from evaluate import evaluate
-# To do: maybe use regex for rules
+
 rules = {
     "ack": ["kay", "good", "fine"],
     "affirm": ["right", "yes", "yeah", "ye", "yea", "correct", "perfect"],
@@ -9,118 +9,32 @@ rules = {
     "deny": ["dont", "don't", "wrong", "no"],
     "hello": ["hello", "hi", "welcome"],
     "inform": [
-    "i dont care",
-    "i don't care",
-    "looking for",
-    "want",
-    "would like",
-    "cheap",
-    "moderate",
-    "moderately",
-    "expensive",
-    "north",
-    "south",
-    "east",
-    "west",
-    "centre",
-    "center",
-    "part of town",
-    "italian",
-    "chinese",
-    "indian",
-    "thai",
-    "french",
-    "turkish",
-    "gastropub",
-    "mediterranean",
-    "asian oriental",
-    "jamaican",
-    "basque",
-    "international",
-    "north american",
-    "danish",
-    "polynesian",
-    "oriental",
-    "korean",
-    "kosher",
-    "german",
-    "portuguese",
-    "lebanese",
-    "russian",
-    "afghan",
-    "spanish",
-    "japanese",
-    "moroccan",
-    "catalan",
-    "african",
-    "european",
-    "modern european",
-    "caribbean",
-    "bistro",
-    "mexican",
-    "asian",
-    "brazilian",
-    "cantonese",
-    "singapore",
-    "singaporean",
-    "corsican",
-    "barbecue",
-    "christmas",
-    "indonesian",
-    "scandinavian",
-    "vietnamese",
-    "scottish",
-    "irish",
-    "british",
-    "english",
-    "persian",
-    "doesnt matter",
-    ],
+        "i dont care", "i don't care", "looking for", "want", "would like", "cheap", "moderate", "moderately",
+        "expensive",
+        "north", "south", "east", "west", "centre", "center", "part of town", "italian", "chinese", "indian", "thai",
+        "french", "turkish", "gastropub", "mediterranean", "asian oriental", "jamaican", "basque", "international",
+        "north american",
+        "danish", "polynesian", "oriental", "korean", "kosher", "german", "portuguese", "lebanese", "russian", "afghan",
+        "spanish", "japanese", "moroccan", "catalan", "african", "european", "modern european", "caribbean", "bistro",
+        "mexican", "asian", "brazilian", "cantonese", "singapore", "singaporean", "corsican", "barbecue", "christmas",
+        "indonesian", "scandinavian", "vietnamese", "scottish", "irish", "british", "english", "persian",
+        "doesnt matter"],
     "negate": ["no", "not"],
     "repeat": ["again", "repeat", "go back", "back"],
-    "reqalts": ["anything else", "what else", "how about", "what about", "is there", "are there", "can you tell me", "next one", "another", "other", "different", "more", "do you have any", "is that the only one with", "what is available"],
+    "reqalts": ["anything else", "what else", "how about", "what about", "is there", "are there", "can you tell me",
+                "next one", "another", "other", "different", "more", "do you have any", "is that the only one with",
+                "what is available"],
     "reqmore": ["more"],
     "restart": ["start over", "start again", "reset"],
     "thankyou": ["thanks", "thank you"],
-    "request": ["what is", "whats", "can i get", "could i get", "may i get", "can i have", "could i have", "may i have", "can i know", "could i know", "may i know", "can you give me", "what kind of", "what type of", "do you have", "what part of town", "what area is", "what area is it in", "where", "i would like", "could you", "i need", "how much", "phone number", "address", "price", "post code", "location"],
+    "request": ["what is", "whats", "can i get", "could i get", "may i get", "can i have", "could i have", "may i have",
+                "can i know", "could i know", "may i know", "can you give me", "what kind of", "what type of",
+                "do you have", "what part of town", "what area is", "what area is it in", "where", "i would like",
+                "could you", "i need", "how much", "phone number", "address", "price", "post code", "location"],
     "null": ["noise", "cough", "unintelligible", "breathing", "inaudible", "breathing"]
 }
 
 name = "Rule-based"
-
-# def evaluate(df):
-#     y_true = df["act"]
-#     y_pred = df["pred"]
-#     accuracy = accuracy_score(y_true, y_pred)
-#     balanced_accuracy = balanced_accuracy_score(y_true, y_pred)
-#     print(f"Accuracy: {accuracy}")
-#     print(f"Balanced Accuracy: {balanced_accuracy}")
-#     print(f"Macro F1: {f1_score(y_true, y_pred, average="macro"):.4f}")
-#     # error analysis
-#     # unmatched = df[df["pred"] == "null"]
-#     # print(unmatched["act"].value_counts())
-#     # errors = df[
-#     #     (df["act"] == "inform") &
-#     #     (df["pred"] == "null")
-#     #     ]
-#     # print(errors["utterance"].sample(
-#     #     min(200, len(errors)),
-#     #     random_state=42
-#     # ).to_string(index=False))
-#     # errors["utterance"].value_counts().head(50)
-#     # print(errors["utterance"].head(100))
-#     # cm = confusion_matrix(df["act"], df["pred"], labels=sorted(df["act"].unique()))
-#     # cm_df = pd.DataFrame(
-#     #     cm,
-#     #     index=sorted(df["act"].unique()),
-#     #     columns=sorted(df["act"].unique())
-#     # )
-#     # print(cm_df)
-#     # errors = df[
-#     #     (df["act"] == "reqalts") &
-#     #     (df["pred"] == "request")
-#     #     ]
-#     # print(errors["utterance"].head(100))
 
 def load_data(path):
     data = []
@@ -139,13 +53,7 @@ def train(isGrouped, use_bert):
     Display the current rule-based classifier configuration.
     Since the rule-based classifier does not require model training, this
     function only reports the rules currently used for classification.
-    Args:
-        isGrouped (bool): This parameter is kept for compatibility with the
-                         other classifiers.
-        use_bert (bool): This parameter is kept for compatibility with the
-                         other classifiers.
     """
-
     print("\n" + "=" * 60)
     print("RULE-BASED CLASSIFIER")
     print("=" * 60)
@@ -167,36 +75,25 @@ def test(isHeldOut, isGrouped, use_bert):
         f"data/processed/{'grouped' if isGrouped else 'original'}_test.dat"
     )
     df = load_data(data_path)
-
-    # print(f"different acts in test_df: {df["act"].unique()}")
-
     df["pred"] = None
 
-    # currently this logic only checks if the rule word is present in the utterance and if not mark it as null type
-    # this can also be modified in the future
-    # To do: how to solve overlapping keywords from different acts? How to deal with act "null"?
+    # Check if the rule word is present in the utterance and if not mark it as null type
     for index, row in df.iterrows():
         words = row["utterance"].split()
         combos = all_ngrams(words=words)
-        # print(f"words: {words}")
         df.loc[index, "pred"] = "null"
         for act, keywords in rules.items():
             for keyword in keywords:
-                # print(f"keyword: {keyword}")
-                # print(f"words: {words}")
-                # print(f"combos: {combos}")
                 if keyword in combos:
-                    # if any(keyword in words for keyword in keywords):
                     df.loc[index, "pred"] = act
                     break
 
-    # print(f"different preds in test_df: {df["pred"].unique()}")
     grouped = "grouped" if isGrouped else "nogroup"
     heldout = "heldout" if isHeldOut else "regular"
     eval_file_name = f"rule_based_{heldout}_{grouped}"
     conf_matrix_file_name = f"rule_based_matrix_{heldout}_{grouped}"
 
-    evaluate(df=df,general_file_name=eval_file_name,conf_matrix_name=conf_matrix_file_name)
+    evaluate(df=df, general_file_name=eval_file_name, conf_matrix_name=conf_matrix_file_name)
 
 
 def predict(utterance, isGrouped, use_bert):
@@ -218,7 +115,7 @@ def predict(utterance, isGrouped, use_bert):
 def all_ngrams(words):
     n = len(words)
     combos = []
-    for length in range(1, n + 1):          # window size: 1, 2, 3, ... up to full length
-        for start in range(0, n - length + 1):  # slide the window across
+    for length in range(1, n + 1):
+        for start in range(0, n - length + 1):
             combos.append(" ".join(words[start:start + length]))
     return combos
