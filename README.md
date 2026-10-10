@@ -114,7 +114,13 @@ python main.py dialog [--slot-fallback <levenshtein/semantic>] [--reasoning-tran
 python main.py heldout --classifier <name> --grouped <y/n> [--bert <y/n>]
 ```
 
-> **Note:** `train` must be run for a given `--classifier`/`--grouped`/`--bert` combination before `test`, `prompt`, or `heldout` can be used with that same combination, and `dialog` needs `python main.py train --classifier ml1 --grouped y --bert y` — those commands load the model file that `train` produces. Running them first will print a clear error telling you which `train` command to run.
+### Pre-trained models
+
+Trained models for all classifier variants are included in the repository under `classifiers/`, so you can run `test`, `prompt`, `heldout`, and `dialog` right away without training anything first.
+
+You are encouraged to train the models again with your preferred `--classifier`/`--grouped`/`--bert` settings. Note that running `train` **overwrites** the existing model file for that same combination, so the provided model is replaced by your newly trained one.
+
+If a model file is missing, `test`, `prompt`, `heldout`, and `dialog` will print an error telling you which `train` command to run (`dialog` always uses `python main.py train --classifier ml1 --grouped y --bert y`).
 
 #### `train`
 Runs the training process for the selected classifier.
