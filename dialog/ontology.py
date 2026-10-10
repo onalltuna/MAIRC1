@@ -1,4 +1,4 @@
-# Define ONTOLOGY terms TODO：maybe need to add more terms and are these three slots enough?
+# Ontology terms used for slot extraction.
 ONTOLOGY = {
     "food": [
         "african",

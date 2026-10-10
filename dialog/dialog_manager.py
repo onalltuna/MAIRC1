@@ -54,13 +54,10 @@ def manage(
             use_bert=use_bert,
         )
 
-        # print(f"prediction: {pred}")
-
         # -----------------------------
         # 2. Transition
         # -----------------------------
         log_user(log_file, utterance, dialog_act=pred, state=state.state)
-        # print(f"\nprevious_state: {state}")
         state, system_response = transition(
             state,
             UserInput(
@@ -78,6 +75,5 @@ def manage(
         if system_response:
             log_system(log_file, system_response, state=state.state)
             system_say(system_response,use_tts=tts)
-            # print(f"\n{system_response}")
 
     end_log(log_file)

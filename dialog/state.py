@@ -51,9 +51,6 @@ class DialogState:
     additional_requirement: Optional[dict] = None
     additional_requirement_asked: bool = False
 
-    # Whether the additional requirement question has been asked already
-    additional_requirement_asked: bool = False
-
     # Last system response, useful for repeat
     last_response: Optional[str] = None
 

@@ -73,7 +73,6 @@ def evaluate(df, general_file_name=None, conf_matrix_name=None):
     ax_cm.set_yticklabels(labels)
     ax_cm.set_xlabel("Predicted act")
     ax_cm.set_ylabel("True act")
-    # ax_cm.set_title(f"Confusion matrix — {base_name}")
 
     # annotate each cell with its count
     thresh = cm.max() / 2 if cm.max() > 0 else 0

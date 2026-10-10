@@ -42,7 +42,7 @@ RESPONSES = {
         "No, the {field} is actually {actual_value}.",
 
     "nomatch":
-        "Sorry, I couldn't find a restaurant matching your preferences: food={food}, area={area}, pricerange={pricerange}",
+        "Sorry, I couldn't find a restaurant matching your preferences: food={food}, area={area}, pricerange={pricerange}.",
     "nomatch_requirement":
         "Sorry, none of the restaurants matching your preferences {requirement}.",
     "nomatchfound":"Sorry, I couldn't find a restaurant matching your preferences.",
@@ -71,7 +71,7 @@ RESPONSES = {
         "Goodbye!",
     "ended":
         "The conversation has ended.",
-    "repeat": "Could please be more elaborate on that.",
+    "repeat": "Could you please elaborate on that?",
 
 
 
