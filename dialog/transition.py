@@ -4,7 +4,7 @@ from dialog.slot_extractor import extract_slots
 from dialog.responses import response
 from dialog.state import DialogState, DialogStateName, UserInput
 from dialog.restaurant_lookup import find_restaurants
-from dialog.reasoning import derive_properties, parse_additional_requirement, apply_rules
+from dialog.reasoning import derive_properties, parse_additional_requirement, apply_rules, describe_property
 import re
 
 
@@ -45,6 +45,22 @@ def is_farewell(normalized_text: str) -> bool:
         if re.search(r"\b" + re.escape(phrase) + r"\b", normalized_text):
             return True
     return False
+
+
+def is_polite_decline(normalized_text: str) -> bool:
+    # "no thanks" / "no, thank you" answers a yes/no question — it is not
+    # a farewell unless the user also says bye
+    if re.search(r"\b(bye|goodbye)\b", normalized_text):
+        return False
+    return re.match(r"^(no|nope|nah)\b[\s,]*(thanks|thank you|thankyou)\b", normalized_text) is not None
+
+
+# states where the system just asked a yes/no question, so "no thanks"
+# is an answer rather than the end of the conversation
+YES_NO_QUESTION_STATES = {
+    DialogStateName.ADDITIONAL_REQUIREMENT,
+    DialogStateName.CONFIRM_SLOT,
+}
 
 
 def is_no_preference(normalized_text: str) -> bool:
@@ -130,13 +146,13 @@ def handle_additional_requirements(state, text, act, config):
     normalized = text.lower().strip()
     no_requirement = {"no", "n", "none", "nope", "no thanks", "nothing"}
 
-    if act in {"negate", "deny"} or normalized in no_requirement:
+    if act in {"negate", "deny"} or normalized in no_requirement or is_polite_decline(normalized):
         state.additional_requirement = None
     else:
         prop, desired = parse_additional_requirement(text)
         state.additional_requirement = {"property": prop, "value": desired} if prop else None
 
-    state.additional_requirement_asked = True   # separate field — doesn't clobber the value above
+    state.additional_requirement_asked = True
     state.state = DialogStateName.LOOKUP
     return transition(state, UserInput(text="", dialog_act="internal_lookup"), config)
 
@@ -405,7 +421,7 @@ def handle_confirmation(
     # User rejected the suggestion
     # --------------------------------
 
-    elif act in {"deny", "negate"} or text in {"no", "n", "nope", "wrong"}:
+    elif act in {"deny", "negate"} or text in {"no", "n", "nope", "wrong"} or is_polite_decline(text.lower().strip()):
         rejected = state.pending_confirmations.pop(0)
 
         # the rejection may carry a corrected preference in the same
@@ -490,11 +506,13 @@ def handle_lookup(state, config):
 
         filtered = []
         for r in matches:
-            derived = derive_properties(r, strategy=config.reasoning_strategy)
+            derived = derive_properties(r)
             if prop in derived and derived[prop][0] == desired:
                 r = dict(r)
                 r["_reasoning_property"] = prop
+                r["_reasoning_value"] = derived[prop][0]
                 r["_reasoning_explanation"] = derived[prop][1]
+                r["_reasoning_contradiction"] = derived[prop][2]
                 filtered.append(r)
         matches = filtered
 
@@ -531,16 +549,32 @@ def generate_recommendation(restaurant, show_reasoning=True):
         pricerange=restaurant["pricerange"],
     )
 
-    explanation = restaurant.get("_reasoning_explanation")
-    if show_reasoning and explanation:
-        prop = restaurant["_reasoning_property"].replace("_", " ")
-        base += f" The restaurant is {prop} because {explanation}."
-
-        note = restaurant.get("_reasoning_contradiction")
-        if note:
-            base += f" (Note: one rule suggested otherwise - {note}.)"
+    if show_reasoning:
+        base += generate_reasoning(restaurant)
 
     return base
+
+
+def generate_reasoning(restaurant):
+    """
+    Explain why the restaurant satisfies the additional requirement,
+    including how a contradiction between rules was resolved.
+    """
+    explanation = restaurant.get("_reasoning_explanation")
+    if not explanation:
+        return ""
+
+    phrase = describe_property(restaurant["_reasoning_property"], restaurant["_reasoning_value"])
+    text = f" It {phrase} because {explanation}."
+
+    note = restaurant.get("_reasoning_contradiction")
+    if note:
+        text += (
+            f" Another rule suggests otherwise ({note}), "
+            f"but I gave priority to the rule in favour."
+        )
+
+    return text
 
 
 
@@ -682,6 +716,9 @@ def handle_alternative(state, act, config):
         area = alternative["area"],
         pricerange = alternative["pricerange"]
     )
+
+    if config.reasoning_transparency:
+        system_response += generate_reasoning(alternative)
 
     state.last_response = system_response
 
@@ -875,7 +912,13 @@ def transition(
     # ------------------------------------
     # Global transitions
     # ------------------------------------
-    if act in {"bye", "thankyou"} or is_farewell(text.lower().strip()):
+    normalized_text = text.lower().strip()
+    declines_question = (
+        state.state in YES_NO_QUESTION_STATES
+        and is_polite_decline(normalized_text)
+    )
+
+    if (act in {"bye", "thankyou"} or is_farewell(normalized_text)) and not declines_question:
         state.state = DialogStateName.END
         system_response = response("goodbye")
         state.last_response = system_response
