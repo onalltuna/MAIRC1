@@ -15,6 +15,7 @@ class DialogStateName:
     RECOMMEND = "RECOMMEND"
     ALTERNATIVE = "ALTERNATIVE"
     ADDITIONAL_REQUIREMENT = "ADDITIONAL_REQUIREMENT"
+    OFFER_DETAILS = "OFFER_DETAILS"
     NO_MATCH = "NO_MATCH"
     OFFER_PREFERENCE_CHANGE = "OFFER_PREFERENCE_CHANGE"
     END = "END"
@@ -42,8 +43,13 @@ class DialogState:
     # Current restaurant
     current_restaurant: Optional[dict] = None
 
-    # Additional reasoning requirement
-    additional_requirement: Optional[tuple] = None
+    # restaurants already recommended / declined
+    shown: set = field(default_factory=set)       # cleared when preferences change
+    rejected: set = field(default_factory=set)    # never cleared
+
+    # additional requirement
+    additional_requirement: Optional[dict] = None
+    additional_requirement_asked: bool = False
 
     # Whether the additional requirement question has been asked already
     additional_requirement_asked: bool = False

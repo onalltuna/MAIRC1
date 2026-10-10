@@ -2,7 +2,7 @@ import random
 from dataclasses import dataclass
 from dialog.slot_extractor import extract_slots
 from dialog.responses import response
-from dialog.state import DialogState, DialogStateName
+from dialog.state import DialogState, DialogStateName, UserInput
 from dialog.restaurant_lookup import find_restaurants
 from dialog.reasoning import derive_properties, parse_additional_requirement, apply_rules, describe_property
 import re
@@ -35,6 +35,9 @@ NO_PREFERENCE_PHRASES = {
 }
 
 FAREWELL_PHRASES = {"bye", "goodbye", "thanks", "thank you", "thankyou"}
+
+
+NEG = re.compile(r"\b(not|don'?t|dont|do not|no)\b")
 
 
 def is_farewell(normalized_text: str) -> bool:
@@ -75,6 +78,25 @@ def is_no_preference(normalized_text: str) -> bool:
             return True
 
     return False
+
+
+
+
+
+def handle_nothing_new(state, text, act):
+    if act == "request":
+        return handle_restaurant_request(state, text)
+    if state.current_restaurant and (act in {"negate", "deny"}):
+        state.state = DialogStateName.OFFER_DETAILS
+        resp = response("nothing_to_change", restaurantname=state.current_restaurant["restaurantname"])
+    else:
+        resp = response("ask_preference_change")
+    state.last_response = resp
+    return state, resp
+
+
+
+
 
 
 def handle_restaurant_confirmation(state, text, config):
@@ -136,8 +158,12 @@ def handle_additional_requirements(state, text, act, config):
 
 
 def handle_welcome(state, text, act, config):
-    if act == "inform":
-        return handle_preferences(state, text, act, config)
+    #issue was that if you say 'hello, i want x', it will aks again for your prefertence even if you just gave the preference. 
+    # hope this will fix it by first checking if any slots can be filled, and then go to the inform act
+    results = extract_slots(text, fallback=config.slot_fallback,
+                            expected_slot=get_missing_slot(state))
+    if results:
+        return handle_preferences(state, text, "inform", config)
 
     state.state = DialogStateName.COLLECT_PREFERENCES
     system_response = ask_for_missing_slot(state)
@@ -191,6 +217,7 @@ def reset_restaurant_results(state):
     """
     state.current_restaurant = None
     state.alternatives = []
+    state.shown.clear()
 
 
 def handle_preferences(
@@ -211,6 +238,8 @@ def handle_preferences(
     # classified as "reqalts"). Only bail out to a generic re-ask when
     # we truly found nothing usable.
     if act != "inform" and not results and not is_no_preference(normalized_text):
+        if all_preferences_known(state): #
+            return handle_nothing_new(state, text, act)
         system_response = ask_for_missing_slot(state)
         state.last_response = system_response
         return state, system_response
@@ -487,13 +516,21 @@ def handle_lookup(state, config):
                 filtered.append(r)
         matches = filtered
 
+    blocked = state.shown | state.rejected
+    matches = [r for r in matches if r["restaurantname"] not in blocked]
+
     if not matches:
-        state.state = DialogStateName.NO_MATCH
-        system_response = response("nomatch", food=state.food, area=state.area, pricerange=state.price)
+        if blocked:
+            state.state = DialogStateName.OFFER_PREFERENCE_CHANGE
+            system_response = response("offer_preference_change")
+        else:
+            state.state = DialogStateName.NO_MATCH
+            system_response = response("nomatch", food=state.food, area=state.area, pricerange=state.price)
         state.last_response = system_response
         return state, system_response
 
     selected = random.choice(matches)
+    state.shown.add(selected["restaurantname"])
     state.current_restaurant = selected
     state.alternatives = [r for r in matches if r != selected]
     state.state = DialogStateName.RECOMMEND
@@ -538,6 +575,31 @@ def generate_reasoning(restaurant):
         )
 
     return text
+
+
+
+
+def handle_offer_details(state, text, act, config):
+    if act == "affirm":
+        return handle_restaurant_request(state, "address phone postcode")
+    if act in {"negate", "deny"}:
+        state.state = DialogStateName.RECOMMEND
+        resp = response("anything_else")
+        state.last_response = resp
+        return state, resp
+    if act == "request":
+        return handle_restaurant_request(state, text)
+    if act == "inform":
+        return handle_preferences(state, text, act, config)
+    resp = response("restaurant_info", restaurantname=state.current_restaurant["restaurantname"])
+    state.last_response = resp
+    return state, resp
+
+
+
+
+
+
 
 def handle_restaurant_request(state, text):
     restaurant = state.current_restaurant
@@ -584,6 +646,7 @@ def handle_restaurant_request(state, text):
 
 
     else:
+        state.state = DialogStateName.OFFER_DETAILS
         system_response = response(
             "restaurant_info",
             restaurantname=restaurant["restaurantname"],
@@ -838,6 +901,11 @@ def transition(
     user_input: UserInput,
     config,
 ):
+
+
+    if state.state == DialogStateName.OFFER_DETAILS:
+        return handle_offer_details(state, text, act, config)
+
     act = user_input.dialog_act.lower()
     text = user_input.text
 
@@ -871,6 +939,17 @@ def transition(
     if act == "repeat":
 
         return state, state.last_response
+
+
+        
+    if state.state in {DialogStateName.RECOMMEND, DialogStateName.ALTERNATIVE} and state.current_restaurant:
+         name = state.current_restaurant["restaurantname"]
+         if name.lower() in text.lower() and NEG.search(text.lower()):
+            state.rejected.add(name)
+            state.alternatives = [a for a in state.alternatives if a["restaurantname"] not in state.rejected]
+            state, nxt = handle_alternative(state, "reqalts", config)
+            state.last_response = f"Okay, I won't suggest {name} again. {nxt}"
+            return state, state.last_response
 
     # ------------------------------------
     # State-specific transitions
