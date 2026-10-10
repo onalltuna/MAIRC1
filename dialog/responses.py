@@ -57,11 +57,11 @@ RESPONSES = {
 
     "restart":
         "Let's start over.",
-    "postcode": "Postcode of {restaurantname} restaurant is {postcode}",
-    "address": "The address of {restaurantname} restaurant is: {address}",
-    "phone": "Phone number of {restaurantname} restaurant is {phone}",
+    "postcode": "Postcode of {restaurantname} is {postcode}.",
+    "address": "The address of {restaurantname} is: {address}.",
+    "phone": "Phone number of {restaurantname} is {phone}.",
     "restaurant_info": "Restaurant {restaurantname} is available. Would you like the address, phone number, or postcode?",
-    "restaurant_info_unknown": "The {info} of {restaurantname} restaurant is unknown.",
+    "restaurant_info_unknown": "The {info} of {restaurantname} is unknown.",
     "acknowledge": "Okay",
     "offer_preference_change":"I'm afraid that's all the options I have. Would you like to change a preference?",
     "ask_preference_change": "What preference would you like to change?",
