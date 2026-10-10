@@ -1,6 +1,6 @@
 import random
 from dataclasses import dataclass
-from dialog.slot_extractor import extract_slots
+from dialog.slot_extractor import extract_slots, extract_candidates
 from dialog.responses import response
 from dialog.state import DialogState, DialogStateName, UserInput
 from dialog.restaurant_lookup import find_restaurants
@@ -162,8 +162,17 @@ def handle_welcome(state, text, act, config):
     # hope this will fix it by first checking if any slots can be filled, and then go to the inform act
     results = extract_slots(text, fallback=config.slot_fallback,
                             expected_slot=get_missing_slot(state))
+    # a greeting like "hi" should not be fuzzy-matched to a food ("thai");
+    # only trust exact keyword matches when the user is saying hello
+    if act == "hello":
+        results = [r for r in results if r.method == "keyword"]
     if results:
         return handle_preferences(state, text, "inform", config)
+
+    # the user named a preference we couldn't match (e.g. "Swedish food") —
+    # let handle_preferences say it is unrecognized instead of asking again
+    if act == "inform" and extract_candidates(text):
+        return handle_preferences(state, text, act, config)
 
     state.state = DialogStateName.COLLECT_PREFERENCES
     system_response = ask_for_missing_slot(state)
@@ -233,10 +242,6 @@ def handle_preferences(
 
     results = extract_slots(text, fallback=config.slot_fallback, expected_slot=missing_slot)
 
-    # The classifier may have mislabeled an utterance that still
-    # contains a usable preference (e.g. "How about Lebanese food"
-    # classified as "reqalts"). Only bail out to a generic re-ask when
-    # we truly found nothing usable.
     if act != "inform" and not results and not is_no_preference(normalized_text):
         if all_preferences_known(state): #
             return handle_nothing_new(state, text, act)
@@ -424,9 +429,6 @@ def handle_confirmation(
     elif act in {"deny", "negate"} or text in {"no", "n", "nope", "wrong"} or is_polite_decline(text.lower().strip()):
         rejected = state.pending_confirmations.pop(0)
 
-        # the rejection may carry a corrected preference in the same
-        # utterance (e.g. "no, not Italian, I want Chinese") — try to
-        # recover it rather than discarding the text entirely
         missing_slot = get_missing_slot(state)
         extracted = extract_slots(
             text,
@@ -445,6 +447,15 @@ def handle_confirmation(
     # --------------------------------
 
     else:
+        extracted = extract_slots(text, fallback=config.slot_fallback)
+        exact = [r for r in extracted if r.method == "keyword"]
+        if exact:
+            filled = {r.slot for r in exact}
+            state.pending_confirmations = [
+                p for p in state.pending_confirmations if p.slot not in filled
+            ]
+            return handle_preferences(state, text, "inform", config)
+
         system_response = response("confirmyesno")
 
         state.last_response = system_response
@@ -514,6 +525,13 @@ def handle_lookup(state, config):
                 r["_reasoning_explanation"] = derived[prop][1]
                 r["_reasoning_contradiction"] = derived[prop][2]
                 filtered.append(r)
+
+        if matches and not filtered:
+            state.state = DialogStateName.NO_MATCH
+            system_response = response("nomatch_requirement", requirement=describe_property(prop, desired))
+            state.last_response = system_response
+            return state, system_response
+
         matches = filtered
 
     blocked = state.shown | state.rejected
@@ -902,10 +920,6 @@ def transition(
     config,
 ):
 
-
-    if state.state == DialogStateName.OFFER_DETAILS:
-        return handle_offer_details(state, text, act, config)
-
     act = user_input.dialog_act.lower()
     text = user_input.text
 
@@ -981,6 +995,9 @@ def transition(
 
     if state.state == DialogStateName.ADDITIONAL_REQUIREMENT:
         return handle_additional_requirements(state, text, act, config)
+
+    if state.state == DialogStateName.OFFER_DETAILS:
+        return handle_offer_details(state, text, act, config)
 
     if state.state == DialogStateName.LOOKUP:
         return handle_lookup(

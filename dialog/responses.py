@@ -43,7 +43,9 @@ RESPONSES = {
 
     "nomatch":
         "Sorry, I couldn't find a restaurant matching your preferences: food={food}, area={area}, pricerange={pricerange}",
-    "nomatchfound": "Sorry, I couldn't find a restaurant matching your preferences.",
+    "nomatch_requirement":
+        "Sorry, none of the restaurants matching your preferences {requirement}.",
+    "nomatchfound":"Sorry, I couldn't find a restaurant matching your preferences.",
     "recommend":
         "I recommend {restaurantname}. "
         "It serves {food} food, is in the {area} area, "
