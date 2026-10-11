@@ -45,18 +45,12 @@ def manage(
             print("Exiting dialog manager")
             break
 
-        # -----------------------------
-        # 1. Classify
-        # -----------------------------
         pred = ml1.predict(
             utterance=utterance,
             isGrouped=is_grouped,
             use_bert=use_bert,
         )
 
-        # -----------------------------
-        # 2. Transition
-        # -----------------------------
         log_user(log_file, utterance, dialog_act=pred, state=state.state)
         state, system_response = transition(
             state,
@@ -66,11 +60,6 @@ def manage(
             ),
             config,
         )
-        
-
-        # -----------------------------
-        # 3. Respond
-        # -----------------------------
 
         if system_response:
             log_system(log_file, system_response, state=state.state)

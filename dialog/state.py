@@ -43,9 +43,9 @@ class DialogState:
     # Current restaurant
     current_restaurant: Optional[dict] = None
 
-    # restaurants already recommended / declined
-    shown: set = field(default_factory=set)       # cleared when preferences change
-    rejected: set = field(default_factory=set)    # never cleared
+    # Restaurants already recommended / declined
+    shown: set = field(default_factory=set)
+    rejected: set = field(default_factory=set)
 
     # additional requirement
     additional_requirement: Optional[dict] = None

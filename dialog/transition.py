@@ -48,15 +48,13 @@ def is_farewell(normalized_text: str) -> bool:
 
 
 def is_polite_decline(normalized_text: str) -> bool:
-    # "no thanks" / "no, thank you" answers a yes/no question — it is not
-    # a farewell unless the user also says bye
+    # "no thanks" / "no, thank you" answers a yes/no question — it is not a farewell unless the user also says bye
     if re.search(r"\b(bye|goodbye)\b", normalized_text):
         return False
     return re.match(r"^(no|nope|nah)\b[\s,]*(thanks|thank you|thankyou)\b", normalized_text) is not None
 
 
-# states where the system just asked a yes/no question, so "no thanks"
-# is an answer rather than the end of the conversation
+# states where the system just asked a yes/no question, so "no thanks" is an answer rather than the end of the conversation
 YES_NO_QUESTION_STATES = {
     DialogStateName.ADDITIONAL_REQUIREMENT,
     DialogStateName.CONFIRM_SLOT,
@@ -70,17 +68,13 @@ def is_no_preference(normalized_text: str) -> bool:
 
     for phrase in NO_PREFERENCE_PHRASES:
         if phrase == "any":
-            # "any" needs a word-boundary check — a plain substring
-            # check would incorrectly match inside words like "many"
+            # "any" needs a word-boundary check — a plain substring check would incorrectly match inside words like "many"
             if re.search(r"\bany\b", normalized_text):
                 return True
         elif phrase in normalized_text:
             return True
 
     return False
-
-
-
 
 
 def handle_nothing_new(state, text, act):
@@ -93,10 +87,6 @@ def handle_nothing_new(state, text, act):
         resp = response("ask_preference_change")
     state.last_response = resp
     return state, resp
-
-
-
-
 
 
 def handle_restaurant_confirmation(state, text, config):
@@ -158,19 +148,15 @@ def handle_additional_requirements(state, text, act, config):
 
 
 def handle_welcome(state, text, act, config):
-    #issue was that if you say 'hello, i want x', it will aks again for your prefertence even if you just gave the preference. 
-    # hope this will fix it by first checking if any slots can be filled, and then go to the inform act
     results = extract_slots(text, fallback=config.slot_fallback,
                             expected_slot=get_missing_slot(state))
-    # a greeting like "hi" should not be fuzzy-matched to a food ("thai");
-    # only trust exact keyword matches when the user is saying hello
+
     if act == "hello":
         results = [r for r in results if r.method == "keyword"]
     if results:
         return handle_preferences(state, text, "inform", config)
 
-    # the user named a preference we couldn't match (e.g. "Swedish food") —
-    # let handle_preferences say it is unrecognized instead of asking again
+    # the user named a preference we couldn't match, let handle_preferences say it is unrecognized instead of asking again
     if act == "inform" and extract_candidates(text):
         return handle_preferences(state, text, act, config)
 
@@ -237,8 +223,6 @@ def handle_preferences(
 ):
     normalized_text = text.lower().strip()
     missing_slot = get_missing_slot(state)
-    
-    # no_preference = {"any", "i don't care", "i dont care", "dont care", "doesn't matter", "does not matter", "whatever", "anything", "no preference", "i have no preference", "it doesn't matter"}
 
     results = extract_slots(text, fallback=config.slot_fallback, expected_slot=missing_slot)
 
@@ -267,9 +251,7 @@ def handle_preferences(
             return state, system_response
 
 
-
-    # Nothing was extracted, but we were specifically expecting a value
-    # for `missing_slot` — the user likely gave an unrecognized preference.
+    # Nothing was extracted, but we were specifically expecting a value for `missing_slot` — the user likely gave an unrecognized preference.
     if not results and missing_slot is not None:
         system_response = response("unrecognized_preference")
         state.state = DialogStateName.COLLECT_PREFERENCES
@@ -298,10 +280,6 @@ def handle_preferences(
     if changed_preferences:
         reset_restaurant_results(state)
 
-    # --------------------------------
-    # Need confirmation?
-    # --------------------------------
-
     if state.pending_confirmations:
 
         state.state = DialogStateName.CONFIRM_SLOT
@@ -325,19 +303,6 @@ def handle_preferences(
         # already asked earlier in the conversation — skip straight to lookup
         state.state = DialogStateName.LOOKUP
         return transition(state, UserInput(text="", dialog_act="internal_lookup"), config)
-
-        return transition(
-            state,
-            UserInput(
-                text="",
-                dialog_act="internal_lookup",
-            ),
-            config,
-        )
-
-    # --------------------------------
-    # Ask for missing preference
-    # --------------------------------
 
     system_response = ask_for_missing_slot(state)
 
@@ -398,10 +363,6 @@ def handle_confirmation(
 
     result = state.pending_confirmations[0]
 
-    # --------------------------------
-    # User accepted the suggestion
-    # --------------------------------
-
     if act == "affirm" or text in {
         "yes",
         "y",
@@ -422,10 +383,6 @@ def handle_confirmation(
 
         state.pending_confirmations.pop(0)
 
-    # --------------------------------
-    # User rejected the suggestion
-    # --------------------------------
-
     elif act in {"deny", "negate"} or text in {"no", "n", "nope", "wrong"} or is_polite_decline(text.lower().strip()):
         rejected = state.pending_confirmations.pop(0)
 
@@ -441,10 +398,6 @@ def handle_confirmation(
                 setattr(state, result.slot, result.value)
                 reset_restaurant_results(state)
                 break
-
-    # --------------------------------
-    # Unknown confirmation response
-    # --------------------------------
 
     else:
         extracted = extract_slots(text, fallback=config.slot_fallback)
@@ -462,10 +415,6 @@ def handle_confirmation(
 
         return state, system_response
 
-    # --------------------------------
-    # More confirmations?
-    # --------------------------------
-
     if state.pending_confirmations:
 
         next_result = state.pending_confirmations[0]
@@ -477,10 +426,6 @@ def handle_confirmation(
         state.last_response = system_response
 
         return state, system_response
-
-    # --------------------------------
-    # All confirmations finished
-    # --------------------------------
 
     if all_preferences_known(state):
 
@@ -495,10 +440,7 @@ def handle_confirmation(
             config,
         )
 
-    # --------------------------------
     # Some preferences are still missing
-    # --------------------------------
-
     state.state = DialogStateName.COLLECT_PREFERENCES
 
     system_response = ask_for_missing_slot(state)
@@ -595,8 +537,6 @@ def generate_reasoning(restaurant):
     return text
 
 
-
-
 def handle_offer_details(state, text, act, config):
     if act == "affirm":
         return handle_restaurant_request(state, "address phone postcode")
@@ -612,11 +552,6 @@ def handle_offer_details(state, text, act, config):
     resp = response("restaurant_info", restaurantname=state.current_restaurant["restaurantname"])
     state.last_response = resp
     return state, resp
-
-
-
-
-
 
 
 def handle_restaurant_request(state, text):
@@ -820,11 +755,7 @@ def handle_offer_preference_change(
       - decline / end the conversation
       - ask to repeat
     """
-
-    # --------------------------------
     # User wants to change preferences
-    # --------------------------------
-
     if act == "inform":
         state.state = DialogStateName.COLLECT_PREFERENCES
 
@@ -835,20 +766,14 @@ def handle_offer_preference_change(
             config,
         )
 
-    # --------------------------------
     # User asks about the restaurant
-    # --------------------------------
-
     if act == "request":
         return handle_restaurant_request(
             state,
             text,
         )
 
-    # --------------------------------
     # User accepts the offer
-    # --------------------------------
-
     if act == "affirm" or text in {
         "yes",
         "y",
@@ -868,10 +793,8 @@ def handle_offer_preference_change(
 
         return state, system_response
 
-    # --------------------------------
-    # User declines
-    # --------------------------------
 
+    # User declines
     if act in {"deny", "negate"} or text in {
         "no",
         "n",
@@ -885,27 +808,20 @@ def handle_offer_preference_change(
 
         return state, system_response
 
-    # --------------------------------
-    # End conversation
-    # --------------------------------
 
+    # End conversation
     if act in {"bye", "thankyou"} or is_farewell(text.lower().strip()):
         state.state = DialogStateName.END
         system_response = response("goodbye")
         state.last_response = system_response
         return state, system_response
 
-    # --------------------------------
-    # Repeat
-    # --------------------------------
 
+    # Repeat
     if act == "repeat":
         return state, state.last_response
 
-    # --------------------------------
     # Otherwise
-    # --------------------------------
-
     system_response = response(
         "offer_preference_change"
     )
@@ -923,9 +839,7 @@ def transition(
     act = user_input.dialog_act.lower()
     text = user_input.text
 
-    # ------------------------------------
     # Global transitions
-    # ------------------------------------
     normalized_text = text.lower().strip()
     declines_question = (
         state.state in YES_NO_QUESTION_STATES
@@ -965,10 +879,7 @@ def transition(
             state.last_response = f"Okay, I won't suggest {name} again. {nxt}"
             return state, state.last_response
 
-    # ------------------------------------
     # State-specific transitions
-    # ------------------------------------
-
     if state.state == DialogStateName.WELCOME:
         return handle_welcome(
             state,

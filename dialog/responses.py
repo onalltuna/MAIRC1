@@ -45,7 +45,7 @@ RESPONSES = {
         "Sorry, I couldn't find a restaurant matching your preferences: food={food}, area={area}, pricerange={pricerange}.",
     "nomatch_requirement":
         "Sorry, none of the restaurants matching your preferences {requirement}.",
-    "nomatchfound":"Sorry, I couldn't find a restaurant matching your preferences.",
+    "nomatchfound": "Sorry, I couldn't find a restaurant matching your preferences.",
     "recommend":
         "I recommend {restaurantname}. "
         "It serves {food} food, is in the {area} area, "
@@ -65,25 +65,20 @@ RESPONSES = {
     "restaurant_info": "Restaurant {restaurantname} is available. Would you like the address, phone number, or postcode?",
     "restaurant_info_unknown": "The {info} of {restaurantname} is unknown.",
     "acknowledge": "Okay",
-    "offer_preference_change":"I'm afraid that's all the options I have. Would you like to change a preference?",
+    "offer_preference_change": "I'm afraid that's all the options I have. Would you like to change a preference?",
     "ask_preference_change": "What preference would you like to change?",
     "goodbye":
         "Goodbye!",
     "ended":
         "The conversation has ended.",
     "repeat": "Could you please elaborate on that?",
-
-
-
-
-
     "nothing_to_change": "Okay, I'll keep your preferences. Would you like the address, phone number, or postcode of {restaurantname}?",
     "anything_else": "Okay. Is there anything else I can help you with?",
     "rejected_ack": "Okay, I won't suggest {restaurantname} again.",
     "confirm_unclear": "Sorry, I didn't understand. Could you rephrase?",
     "fallback": "Sorry, I didn't catch that. Could you rephrase?"
-
 }
+
 
 def response(key, **kwargs):
     if "restaurantname" in kwargs and kwargs["restaurantname"]:

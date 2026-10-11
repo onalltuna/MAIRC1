@@ -3,9 +3,6 @@ import joblib
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from classifiers.bert_encoder import encode_bert
-from transformers import DistilBertTokenizerFast, DistilBertModel
-import numpy as np
-import torch
 from evaluate import evaluate
 
 from transformers.utils import logging

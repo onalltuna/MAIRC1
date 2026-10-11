@@ -10,11 +10,8 @@ class SlotResult:
     slot: Optional[str] = None
     value: Optional[str] = None
 
-    # How the value was found:
-    # "keyword", "levenshtein", "semantic", or None
     method: Optional[str] = None
 
-    # If the value needs confirmation
     needs_confirmation: bool = False
 
     # Original value detected from the user
@@ -167,7 +164,7 @@ def extract_candidates(text: str, expected_slot: Optional[str] = None) -> list[t
     return candidates
 
 
-def extract_by_semantic(candidate: str, slot: str, threshold: float = 0.6) -> Optional[SlotResult]:
+def extract_by_semantic(candidate: str, slot: str, threshold: float = 0.7) -> Optional[SlotResult]:
     """
     Fallback to recover a slot value using semantic similarity when keyword matching does not work.
     The candidate is compared against the ontology values for the specified slot using DistilBERT embeddings.
@@ -195,7 +192,7 @@ def extract_by_semantic(candidate: str, slot: str, threshold: float = 0.6) -> Op
 def extract_slots(
     text: str,
     fallback: str = "levenshtein",
-    semantic_threshold: float = 0.6,
+    semantic_threshold: float = 0.7,
     expected_slot: Optional[str] = None,
     exclude_value: Optional[str] = None,
 ) -> list[SlotResult]:

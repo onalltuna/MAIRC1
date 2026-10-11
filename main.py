@@ -108,8 +108,7 @@ def activate_prompt_with_classifier(classifier_name, is_grouped, use_bert):
         sys.exit(1)
 
 
-# The dialog system always uses the MLP (ml1) trained on the grouped split
-# with DistilBERT embeddings.
+# The dialog system always uses the MLP (ml1) trained on the grouped split with DistilBERT embeddings.
 DIALOG_IS_GROUPED = True
 DIALOG_USE_BERT = True
 DIALOG_RESTAURANT_DB = "dialog/restaurant_info_extended.csv"

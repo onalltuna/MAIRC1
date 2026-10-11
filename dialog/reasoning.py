@@ -101,8 +101,7 @@ def resolve_property(fired_rules):
     false_rules = [r for r in fired_rules if r.value is False]
 
     if true_rules and false_rules:
-        # genuine contradiction — both a True and a False rule fired,
-        # resolved by letting the positive rule win
+        # genuine contradiction — both a True and a False rule fired, resolved by letting the positive rule win
         chosen, losing = true_rules[0], false_rules[0]
         return chosen.value, chosen.description, losing.description
 
