@@ -37,7 +37,6 @@ This project implements a restaurant recommendation dialog system in two parts. 
 │   ├── logging.py                  # Writes conversation logs saved in folder logs/
 │   ├── restaurant_info.csv         # Original restaurant data
 │   ├── restaurant_info_extended.csv  # Restaurant data with extra properties (used by the system)
-│   ├── bugs.txt                    # Known bugs
 │   └── logs/                       # Interaction logging .txt files
 ├── data/
 │   ├── raw/
@@ -47,8 +46,6 @@ This project implements a restaurant recommendation dialog system in two parts. 
 │   │   ├── reference_dialogs.txt   # 20 reference dialogs for the dialog system
 │   │   └── restaurant_info.csv
 │   └── processed/                  # Original and grouped train/test splits
-├── docs/
-│   └── state_diagram_updated.*     # Updated state transition diagram (.drawio, .svg, .png)
 └── results/                        # Plots produced by test and heldout
 ```
 
