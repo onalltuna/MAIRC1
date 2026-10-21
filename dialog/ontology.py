@@ -20,7 +20,9 @@ ONTOLOGY = {
         "vietnamese",
         "tuscan",
         "seafood",
-        "lebanese"
+        "lebanese",
+        "korean",
+        "european"
     ],
     "price": [
         "cheap",
